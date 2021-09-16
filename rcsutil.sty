@@ -1,0 +1,159 @@
+%% -*- LaTeX -*-
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{rcsutil}
+
+\DeclareOption{oldspacing}{
+  \setbeamersize{text margin left=1.5em,text margin right=1.5em}
+  \setlength\leftmargini{1.5em}
+  \setlength\leftmarginii{1.5em}
+  \setlength\leftmarginiii{1.5em}
+
+  % Prosper did the equivalent of \linespread{1.18}, but it looks
+  % better if the extra space goes only between items.
+  \newlength\extravskip
+  \setlength\extravskip{0.2\baselineskip}
+  \xdef\@listi{\@listi\advance\itemsep by\extravskip\relax}
+  \xdef\@listii{\@listii\advance\itemsep by\extravskip
+                \partopsep0pt
+                \advance\topsep by\extravskip
+                \relax}
+  \xdef\@listiii{\@listiii\advance\itemsep by\extravskip\relax}
+  \let\@listI=\@listi
+}
+\ProcessOptions\relax
+
+\setbeamercovered{transparent}
+
+%% Show overlay numbers in PDF page labels of overlay slides to make
+%% editing easier...
+\pdfstringdefDisableCommands{%
+  \renewcommand*{\insertframenumber}{%
+    \ifnum\value{page}=\beamer@framestartpage\relax
+    \theframenumber
+    \else\theframenumber-\the\numexpr1+\value{page}-\beamer@framestartpage\fi
+  }%
+}
+
+% Show outline at each section, but don't highlight links of current
+% section won't be highlighted.
+\AtBeginSection[]
+{
+  \begin{frame}<beamer>
+    \hypersetup{hidelinks}
+    \frametitle{Outline}
+    \tableofcontents[currentsection]
+  \end{frame}
+}
+
+%
+% Hyphen that shrinks appropriately in math mode (unlike, e.g., \mbox{SHA-1})
+%
+\newcommand{\hyph}{{\mathrm{{\mathchar"002D}}}}
+
+%
+% Some symbols
+%
+\def\sqbullet{\vrule depth -.2ex height 1.2ex width 1ex\relax}
+
+%
+% Some colors
+%
+\let\Red=\alert
+% http://www.perceptualedge.com/articles/visual_business_intelligence/rules_for_using_color.pdf
+\definecolor{few-gray-bright}{HTML}{010202}
+\definecolor{few-red-bright}{HTML}{EE2E2F}
+\definecolor{few-green-bright}{HTML}{008C48}
+\definecolor{few-blue-bright}{HTML}{185AA9}
+\definecolor{few-orange-bright}{HTML}{F47D23}
+\definecolor{few-purple-bright}{HTML}{662C91}
+\definecolor{few-brown-bright}{HTML}{A21D21}
+\definecolor{few-pink-bright}{HTML}{B43894}
+
+\definecolor{few-gray}{HTML}{737373}
+\definecolor{few-red}{HTML}{F15A60}
+\definecolor{few-green}{HTML}{7AC36A}
+\definecolor{few-blue}{HTML}{5A9BD4}
+\definecolor{few-orange}{HTML}{FAA75B}
+\definecolor{few-purple}{HTML}{9E67AB}
+\definecolor{few-brown}{HTML}{CE7058}
+\definecolor{few-pink}{HTML}{D77FB4}
+
+\definecolor{few-gray-light}{HTML}{CCCCCC}
+\definecolor{few-red-light}{HTML}{F2AFAD}
+\definecolor{few-green-light}{HTML}{D9E4AA}
+\definecolor{few-blue-light}{HTML}{B8D2EC}
+\definecolor{few-orange-light}{HTML}{F3D1B0}
+\definecolor{few-purple-light}{HTML}{D5B2D4}
+\definecolor{few-brown-light}{HTML}{DDB9A9}
+\definecolor{few-pink-light}{HTML}{EBC0DA}
+
+%\hypersetup{pdfpagemode=FullScreen}
+\hypersetup{colorlinks=true}
+
+\usepackage{tikz}
+\tikzset{
+    only/.code args={<#1>#2}{\only<#1>{\pgfkeysalso{#2}}},
+    alt/.code args={<#1>#2#3}{\alt<#1>{\pgfkeysalso{#2}}{\pgfkeysalso{#3}}},
+    invisible/.style={opacity=0},
+    covered/.style={opacity=.15},
+    onslide/.style={alt={#1{}{covered}}},
+    visible/.style={alt={#1{}{invisible}}},
+}
+% For some reason \visible doesn't always work in tikz
+\newcommand<>\safevisible[1]{\alt#2{#1}{\phantom{#1}}}
+\newcommand<>\alertvisible[1]{\temporal#2{\phantom{#1}}{\alert{#1}}{#1}}
+
+\newcommand{\redbulletarrow}{%
+  \tikz[baseline=0pt] \draw[->,very thick,alert-color] (0,.3em) -- (6mm,.3em);}
+
+\newenvironment{redbulletenv}%
+{\only{\setbeamercolor{\beameritemnestingprefix item}{parent=alerted text}%
+    \setbeamercolor{sub\beameritemnestingprefix item}{parent=local structure}%
+    \setbeamertemplate{itemize \beameritemnestingprefix item}{\redbulletarrow}%
+    \let\oldinsertenumlabel=\insertenumlabel%
+    \let\insertenumlabel=0 % won't be expanded in edef
+    \edef\oldenumtemplate{\expandbeamertemplate{enumerate item}}%
+    \setbeamertemplate{enumerate item}{\redbulletarrow~\oldenumtemplate}%
+    \let\insertenumlabel=\oldinsertenumlabel%
+}}{}
+
+%
+% Some verbatim environments
+%
+\begingroup \catcode `|=0 \catcode `[= 1
+\catcode`]=2 \catcode `\{=12 \catcode `\}=12
+\catcode`\\=12 |gdef|@xmyverb#1\end{myverb}[#1|end[myverb]]
+|endgroup
+\def\myverb{\begingroup\scriptsize\openup-1\jot%
+\@verbatim \frenchspacing\@vobeyspaces \@xmyverb}
+\def\endmyverb{\if@newlist \leavevmode\fi\endtrivlist\endgroup}
+
+%
+% Listings with ` and ' as escape codes
+%
+%\definecolor{comment}{rgb}{0,0,1}
+\colorlet{comment}{few-blue-bright}
+\colorlet{string}{few-green-bright}
+\usepackage{listings}
+%% \lstnewenvironment{code}%
+%%     {\vspace*{-1\baselineskip}\lstset{language=C,escapeinside=`',%
+%%             columns=flexible,%
+%%             commentstyle=\color{comment},%
+%%             basicstyle=\ttfamily\openup-1\jot}}%
+%%     {}
+%% \lstnewenvironment{smallcode}%
+%%     {\vspace*{-1\baselineskip}\lstset{language=C,escapeinside=`',%
+%%             columns=flexible,%
+%%             commentstyle=\color{comment},%
+%%             basicstyle=\ttfamily\scriptsize\openup-1\jot%
+%%     }}%
+%%     {}
+
+
+\newcommand{\itms}[1]{\par\begin{itemize}#1\end{itemize}}
+\let\ittms\itms
+\let\itttms\ittms
+
+\newcommand{\gap} {\vspace{1em}}
+

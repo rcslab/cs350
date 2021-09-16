@@ -1,0 +1,145 @@
+%% -*- LaTeX -*-
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{rcstalk}
+
+\DeclareOption{oldspacing}{}
+\ProcessOptions\relax
+
+%\renewcommand{\baselinestretch}{1.2}
+\usepackage[oldspacing]{rcsutil}
+\usepackage{fontspec}
+\usepackage{xkcdcolors}
+
+%
+% Tikz/PGF
+%
+\usepackage{tikz}
+\usetikzlibrary{shapes,arrows,shadows,positioning,patterns,matrix,calc}
+
+\usepackage{pgf}
+\usepackage{pgfplots}
+
+\pgfplotsset{compat=1.12}
+
+%
+% Set Fonts
+%
+\setmonofont{Consolas}
+\setsansfont{OpenSans-SemiBold}[
+    BoldFont=OpenSans-ExtraBold,
+    ItalicFont=OpenSans-SemiBoldItalic,
+    BoldItalicFont=OpenSans-ExtraBoldItalic
+]
+\setmainfont{OpenSans-SemiBold}
+
+\setbeamercovered{invisible}
+
+% http://tex.stackexchange.com/questions/9261/using-opacity-in-tikz-causes-strange-rendering-in-acrobat
+% http://tex.stackexchange.com/questions/29523/inkscape-pdf-includegraphics-xelatex-changed-colors/29532
+\pdfpageattr{/Group <</S /Transparency /I true /CS /DeviceRGB>>} 
+
+% http://tex.stackexchange.com/questions/26071/how-can-i-have-colored-and-underlined-links-with-hyperref
+\Hy@AtBeginDocument{%
+  % Overrides border definition set with colorlinks=true:
+  \def\@pdfborder{0 0 1}
+  % Overrides border style set with colorlinks=true
+  % Hyperlink border style will be underline of width 1pt
+  \def\@pdfborderstyle{/S/U/W 1}
+}
+
+%
+% Some colors
+%
+
+%% \newcommand<>{\Blue}[1]{{\color#2{beamer@blendedblue}#1}}
+%% \newcommand{\Green}[1]{\mbox{}{\color[rgb]{0,.8,0}#1}}
+%% \newcommand{\Black}[1]{\mbox{}{\color[rgb]{0,0,0}#1}}
+%% \newcommand{\Maroon}[1]{\mbox{}{\color[rgb]{.79,.19,.38}#1}}
+%% \newcommand{\Purple}[1]{\mbox{}{\color[rgb]{.5,0,1}#1}}
+%% \newcommand{\Orange}[1]{\mbox{}{\color[rgb]{.9,.55,0}#1}}
+\newcommand{\Magenta}[1]{\mbox{}{\color[rgb]{1,0,1}#1}}
+\def\Green{\textcolor{few-green-bright}}
+\def\Orange{\textcolor{few-orange-bright}}
+\def\Blue{\textcolor{xkcdBlue}} %few-blue-bright}}
+\def\Pink{\textcolor{few-pink-bright}}
+\def\Purple{\textcolor{few-purple-bright}}
+\def\Brown{\textcolor{few-brown-bright}}
+
+%
+% Listings with ` and ' as escape codes
+%
+%\definecolor{comment}{rgb}{0,0,1}
+%\usepackage{listings}
+\lstdefinestyle{ccode}{
+  showstringspaces=false,
+  stringstyle={\ttfamily\color{string}},
+  language=C,escapeinside=`',columns=flexible,commentstyle=\color{comment},
+  basicstyle=\ttfamily
+}
+\lstnewenvironment{ccode}[1][]%
+    {\lstset{style=ccode,basicstyle=\ttfamily\openup-.17\baselineskip,#1}}%
+    {}
+\lstnewenvironment{smallccode}[1][]%
+    {\lstset{style=ccode,%
+	basicstyle=\small\ttfamily\openup-.17\baselineskip,#1}}%
+    {}
+
+\lstnewenvironment{asm}[1][]%
+    {\lstset{language=[x86masm]Assembler,
+            escapeinside=`',%
+            columns=flexible,%
+            comment=[l]\#,%
+            commentstyle=\color{comment},%
+            basicstyle=\ttfamily\openup-.17\baselineskip,%
+            #1}}%
+    {}
+
+% Prosper compatibility
+% Note, make sure you never have:
+% {...
+% \end{slide}}
+% As the closing } will mess up verbatim compatibility.  You must say:
+% \end{slide}
+% }  % - where the \end{slide} is on its own line
+\newenvironment{slide}[1]%
+               {\begin{frame}[fragile,environment=slide]
+                       \frametitle{{#1}}%
+               \par\vskip0.5\baselineskip minus 0.2\baselineskip}
+               {\end{frame}}
+\def\widen#1{}
+
+% Compatibility
+\let\slname=\frametitle
+
+%
+% Extension codes
+%
+\makeatletter
+\newcommand{\extensioncode}{{%
+\@ifundefined{theextensioncode}{\input{extensioncode}}{}%
+\setbox0=\hbox{\texttt{\theextensioncode{}}}%
+\@ifundefined{exposeextensioncode}%
+    {\hbox to\wd0{\cleaders\vrule height \ht0 depth \dp0\hfill}}%
+    {\unhbox0}%
+}}
+\makeatother
+
+\title{CS350: Operating Systems}
+\author{Ali Mashtizadeh}
+\institute{University of Waterloo}
+\date{}
+\newcommand{\cref}[2]{\href{https://rcs.uwaterloo.ca/~ali/cs350-f19/#1}{#2}}
+
+%
+% This string gets extracted as the name of the link for index.html on
+% the lecture notes page.  It is an error not to call topic.
+%
+\makeatletter
+\newcommand{\topic}[1]{%
+\def\my@topic{#1}\immediate\write16{Lecture Topic: \my@topic}}
+\makeatother
+
+\AtEndDocument{\expandafter\ifx\csname my@topic\endcsname\relax%
+% This error happens if you don't call \topic
+\ErrorMustCallTopic\fi}

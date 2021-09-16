@@ -1,0 +1,176 @@
+
+\usepackage{xkcdcolors}
+
+\definecolor{few-gray-bright}{HTML}{010202}
+\definecolor{few-red-bright}{HTML}{EE2E2F}
+\definecolor{few-green-bright}{HTML}{008C48}
+\definecolor{few-blue-bright}{HTML}{185AA9}
+\definecolor{few-orange-bright}{HTML}{F47D23}
+\definecolor{few-purple-bright}{HTML}{662C91}
+\definecolor{few-brown-bright}{HTML}{A21D21}
+\definecolor{few-pink-bright}{HTML}{B43894}
+
+\definecolor{few-gray}{HTML}{737373}
+\definecolor{few-red}{HTML}{F15A60}
+\definecolor{few-green}{HTML}{7AC36A}
+\definecolor{few-blue}{HTML}{5A9BD4}
+\definecolor{few-orange}{HTML}{FAA75B}
+\definecolor{few-purple}{HTML}{9E67AB}
+\definecolor{few-brown}{HTML}{CE7058}
+\definecolor{few-pink}{HTML}{D77FB4}
+
+\definecolor{few-gray-light}{HTML}{CCCCCC}
+\definecolor{few-red-light}{HTML}{F2AFAD}
+\definecolor{few-green-light}{HTML}{D9E4AA}
+\definecolor{few-blue-light}{HTML}{B8D2EC}
+\definecolor{few-orange-light}{HTML}{F3D1B0}
+\definecolor{few-purple-light}{HTML}{D5B2D4}
+\definecolor{few-brown-light}{HTML}{DDB9A9}
+\definecolor{few-pink-light}{HTML}{EBC0DA}
+
+% #BE2526
+\colorlet{alert-color}{few-red-bright!80!black}
+
+\mode<presentation>
+
+\usepackage[T1]{fontenc}
+
+%%\RequirePackage[sc]{mathpazo}
+%% \RequirePackage{helvet}
+%% %\renewcommand{\rmdefault}{ppl}
+%% %\renewcommand{\sfdefault}{phv}
+%% %\renewcommand{\ttdefault}{cmtt}
+%\usefonttheme{serif}
+%% %\setbeamercovered{transparent}
+
+%\RequirePackage{libertine}
+%\RequirePackage[lf]{venturis}
+%\RequirePackage{helvet}
+%\usepackage{lmodern}   % Better version of CM fonts
+%\usepackage{tgheros}   % Better version of nimbus
+%\usepackage{cabin}
+%\usepackage[condensed]{cabin}
+%\usefonttheme[onlymath]{serif}
+%\renewcommand{\ttdefault}{cmtt}
+%\renewcommand{\ttdefault}{txtt}
+
+%\definecolor{kylebg}{rgb}{.9059,.9059,.9059}
+%\setbeamercolor{kylebg}{fg=black,bg=kylebg}
+
+
+%\usepackage[activate={true,nocompatibility},final,tracking=true,kerning=true,spacing=true,factor=1100,stretch=10,shrink=10]{microtype}
+\usepackage{microtype}
+
+\colorlet{title-link}{few-blue-light!50}
+
+\def\hyperreset{\hypersetup{allcolors={few-blue-bright},
+  urlbordercolor={few-blue-bright},
+  linkbordercolor={few-blue-bright},
+  pdfborderstyle={/S/U/W 1}}}
+\hyperreset
+\let\realfootnote\footnote
+\def\footnote#1{\realfootnote{\hyperreset#1}}
+
+\setbeamertemplate{frametitle}[default][center]
+\addtobeamertemplate{frametitle}{}{\offinterlineskip\pgfuseshading{shadeline}}
+\defbeamertemplate*{frametitle}{cshadow}{
+  \ifbeamercolorempty[bg]{frametitle}{}{\nointerlineskip}%
+  \@tempdima=\textwidth%
+  \advance\@tempdima by\beamer@leftmargin%
+  \advance\@tempdima by\beamer@rightmargin%
+  \begin{beamercolorbox}[sep=0.3cm,center,wd=\the\@tempdima]{frametitle}
+    \usebeamerfont{frametitle}%
+    \vbox{}\vskip-1ex%
+    \hypersetup{allcolors=title-link,
+      linkbordercolor=title-link,
+      urlbordercolor=title-link}%
+    \strut\insertframetitle\strut\par%
+    {%
+      \ifx\insertframesubtitle\@empty%
+      \else%
+      {\usebeamerfont{framesubtitle}\usebeamercolor[fg]{framesubtitle}\insertframesubtitle\strut\par}%
+      \fi
+    }%
+    \vskip-1ex%
+    \if@tempswa\else\vskip-.3cm\fi% set inside beamercolorbox... evil here...
+  \end{beamercolorbox}%
+  \nointerlineskip\vspace*{-.1mm}\centerline{\pgfuseshading{shadeline}}
+}
+[action]
+{\pgfdeclareverticalshading{shadeline}{\paperwidth}%
+  {color(1.8mm)=(white);
+  %color(1.0mm)=(few-blue!50!black!50!white);
+    color(1.8mm)=(few-blue)}}
+
+
+%\setbeamertemplate{frametitle}[shadow theme]
+%\setbeamerfont{frametitle}{size=\LARGE,series=\bfseries}
+\setbeamerfont{frametitle}{family=\rmfamily,size=\Large,series=\bfseries}
+\setbeamerfont{framesubtitle}{family=\rmfamily,parent=frametitle,size=\normalsize}
+\setbeamerfont{block title}{parent={structure,block body},%
+  family=\rmfamily,size=\small,series=\bfseries}
+
+\defbeamertemplate*{navigation symbols}{no sections}%
+{\hbox{\hbox{\insertframenavigationsymbol}
+    \hbox{\insertbackfindforwardnavigationsymbol}}}
+
+\setbeamertemplate{navigation symbols}{}
+
+\defbeamertemplate{footline}{navigation and frame number}%
+{%
+  \leavevmode\kern1em\usebeamertemplate***{navigation symbols}%
+  \hfill
+  \raise1pt\hbox{\usebeamercolor[fg]{page number in head/foot}%
+  \usebeamerfont{page number in head/foot}%
+  \insertframenumber\,/\,\inserttotalframenumber}\kern1em\vskip2pt%
+}
+\defbeamertemplate*{footline}{frame number only}%
+{%
+  \hfill
+  \raise1pt\hbox{\usebeamercolor[fg]{page number in head/foot}%
+  \usebeamerfont{page number in head/foot}%
+  \insertframenumber\,/\,\inserttotalframenumber}\kern1em\vskip2pt%
+}
+\setbeamertemplate{sidebar right}{}
+\setbeamertemplate{sidebar right}{}
+
+\setbeamertemplate{blocks}[rounded][shadow]
+%\setbeamertemplate{title page}[default][colsep=-4bp,rounded=true,shadow]
+\setbeamertemplate{part page}[default][colsep=-4bp,rounded=true,shadow]
+\setbeamerfont{title}{parent=frametitle,size=\LARGE}
+\setbeamerfont{institute}{size=\footnotesize}
+
+\setbeamertemplate{itemize item}[circle]
+\setbeamertemplate{itemize subitem}[triangle]
+\setbeamertemplate{itemize subsubitem}%
+    {\scriptsize\raise1pt\hbox{\donotcoloroutermaths$\triangleright$}}
+
+%\setbeamerfont{item}{parent=structure,series=\bfseries}
+%\setbeamerfont{subitem}{parent=item,series=\mdseries,size=\footnotesize}
+%\setbeamerfont{itemize/enumerate body}{series=\bfseries}
+%\setbeamerfont{itemize/enumerate body}{series=\mdseries}
+%\setbeamerfont{itemize/enumerate subbody}{series=\mdseries,size=\footnotesize}
+
+%\usecolortheme{seahorse}
+\usecolortheme{rose}
+%\setbeamercolor{block title}{fg=beamer@blendedblue,bg=beamer@blendedblue!20}
+\setbeamercolor{block title}{fg=few-blue-bright,bg=few-blue-light}
+%\setbeamercolor{structure}{fg=black}
+\setbeamercolor{block title
+  example}{fg=few-green-bright,bg=few-green!50}
+\setbeamercolor{title}{fg=few-blue,bg=white}
+\setbeamercolor{frametitle}{fg=white,bg=few-blue}
+\setbeamercolor{local structure}{fg=few-blue}
+\setbeamercolor{alerted text}{fg=alert-color}
+
+% Slightly easier to read, but might look weird compared to itemize
+\setbeamercolor{enumerate item}{fg=few-blue-bright}
+\setbeamercolor{enumerate subitem}{parent=enumerate item}
+
+\setbeamertemplate{section in toc}[circle]
+\setbeamertemplate{section in toc shaded}[default][100]
+\setbeamercolor{section in toc shaded}{fg=black}
+\setbeamercolor{section in toc}{parent=alerted text}
+
+\mode
+<all>
