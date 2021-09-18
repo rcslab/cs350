@@ -32,12 +32,12 @@ GENFIGS  := $(patsubst %.svg,%.pdf, $(SVGFIGS)) \
 DEPFIGS  := $(filter-out %-eps-converted-to.pdf, $(GENFIGS)) \
 	    $(EPSONLY) $(PDFONLY)
 
-DIST      = Beamer.mk lectureb.sty beamerthemelectureb.sty \
+DIST      = Beamer.mk rcstalk.sty rcsutil.sty beamerthemercstheme.sty \
 	    $(addprefix $(BASE)/, GNUmakefile $(BASE).tex $(EXTRADIST) \
 	    $(SVGFIGS) $(XFIGS) $(EPSONLY) $(PDFONLY))
 
 $(BASE).pdf: $(DEPFIGS)
-$(BASE).pdf: $(PARENT)/lectureb.sty $(PARENT)/beamerthemelectureb.sty
+$(BASE).pdf: $(PARENT)/rcstalk.sty $(PARENT)/rcsutil.sty $(PARENT)/beamerthemercstheme.sty
 
 %.pdf: %.svg
 	inkscape --export-area-snap --export-area-drawing --export-pdf=$@ $<
