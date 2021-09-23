@@ -1,0 +1,1454 @@
+%% -*- Lecture -*-
+
+\documentclass[11pt,aspectratio=169]{beamer}
+
+\usepackage{rcstalk}
+\usetheme{rcstheme}
+
+\subtitle{Lecture 4: Concurrency}
+\topic{Concurrency}
+
+\begin{document}
+
+\maketitle
+
+\begin{slide}{Review: Processes and Threads}
+\itms{
+  \item A process is an instance of a running program
+  \ittms{
+    \item Process can have one or more threads
+  }
+  \gap
+  \item A thread is an execution context
+  \ittms{
+    \item Share address space (code, data, heap), open files
+    \item Have their own CPU registers and stack (local variables)
+  }
+  \gap
+  \item POSIX Thread APIs
+  \ittms{
+    \item \texttt{pthread\_create()} -- Create a new thread
+    \item \texttt{pthread\_exit()} -- Destroy the current thread
+    \item \texttt{pthread\_join()} -- Waits for a thread to exit
+  }
+}
+\end{slide}
+
+% \begin{slide}{Review: Thread package API}
+% \itms{
+%   \item \texttt{tid thread\_create(void (*fn) (void *), \rlap{void
+%           *arg);}}
+%   \ittms{
+%     \item Create a new thread that calls \texttt{fn} with \texttt{arg}
+%   }
+%   \item \texttt{void thread\_exit();}
+%   \item \texttt{void thread\_join(tid thread);}
+%   \item The execution of multiple threads is interleaved
+%   \item Can have \emph{\Red{non-preemptive} threads}:
+%   \ittms{
+%     \item One thread executes
+%       exclusively until it makes a blocking call
+%   }
+%   \item Or \emph{\Red{preemptive} threads}:
+%   \ittms{
+%     \item May switch to
+%       another thread between any two instructions.
+%   }
+%   \item Using multiple CPUs is inherently preemptive
+%   \ittms{
+%     \item Even if you don't take $CPU_0$ away from thread $T$, another
+%       thread on $CPU_1$ can execute between any two instructions of
+%       $T$
+%   }
+% %  \item Threads may run simultaneously
+% %  \ittms{
+% %    \item E.g., \texttt{create (p1, NULL); create (p2, NULL);}
+% %    \item \texttt{p1} and \texttt{p2} run interleaved or concurrently
+% %  }
+% %  \item Threads have same address space
+% %  \ittms{
+% %    \item Usually share some memory locations between threads
+% %    \item Otherwise, could just have used processes
+% %  }
+% %  \item Sharing + Concurrency can lead to unexpected results
+% }
+% \end{slide}
+
+\begin{slide}{Critical Sections}
+\begin{columns}
+\column{0.5\textwidth}
+    \begin{ccode}
+int total = 0;
+void add() {
+    for (int i=0; i<N; i++) {
+	total++;
+    }
+}
+
+void sub() {
+    for (int i=0; i<N; i++) {
+	total--;
+    }
+}
+    \end{ccode}
+\column{0.5\textwidth}
+\end{columns}
+\end{slide}
+
+\begin{slide}{Critical Sections}
+\begin{columns}
+\column{0.5\textwidth}
+    \begin{ccode}
+int total = 0;
+void add() {
+    /* r8 := &total */
+    for (int i=0; i<N; i++) {
+	lw r9, 0(r8) /* total++ */
+	add r9, 1
+	sw r9, 0(r8)
+    }
+}
+
+void sub() {
+    for (int i=0; i<N; i++) {
+	lw r9, 0(r8) /* total-- */
+	sub r9, 1
+	sw r9, 0(r8)
+    }
+}
+    \end{ccode}
+\column{0.5\textwidth}
+\end{columns}
+\end{slide}
+
+\begin{slide}{Critical Sectionsi: Schedule 1}
+\begin{columns}
+\column{0.5\textwidth}
+    Thread \#1\\
+    \begin{ccode}
+------------
+lw r9, 0(r8) /* total++ */
+add r9, 1
+sw r9, 0(r8)
+
+
+
+------------
+    \end{ccode}
+\column{0.5\textwidth}
+    Thread \#2\\
+    \begin{ccode}
+------------
+
+
+
+lw r9, 0(r8) /* total-- */
+sub r9, 1
+sw r9, 0(r8)
+------------
+    \end{ccode}
+\end{columns}
+\itms{
+\pause
+\gap
+\item Increment completed then decrement
+\item Result: total = 0
+}
+\end{slide}
+
+\begin{slide}{Critical Sections: Schedule 2}
+\begin{columns}
+\column{0.5\textwidth}
+    Thread \#1\\
+    \begin{ccode}
+------------
+lw r9, 0(r8) /* total++ */
+
+add r9, 1
+
+sw r9, 0(r8)
+
+------------
+    \end{ccode}
+\column{0.5\textwidth}
+    Thread \#2\\
+    \begin{ccode}
+------------
+
+lw r9, 0(r8) /* total-- */
+
+sub r9, 1
+
+sw r9, 0(r8)
+------------
+    \end{ccode}
+\end{columns}
+\itms{
+\pause
+\gap
+\item Both load zero, then stores clobber one another
+\item Result: total = -1
+}
+\end{slide}
+
+\begin{slide}{Critical Sections: Schedule 3}
+\begin{columns}
+\column{0.5\textwidth}
+    Thread \#1\\
+    \begin{ccode}
+------------
+lw r9, 0(r8) /* total++ */
+add r9, 1
+
+sw r9, 0(r8)
+
+
+------------
+    \end{ccode}
+\column{0.5\textwidth}
+    Thread \#2\\
+    \begin{ccode}
+------------
+lw r9, 0(r8) /* total-- */
+sub r9, 1
+sw r9, 0(r8)
+
+
+
+------------
+    \end{ccode}
+\end{columns}
+\itms{
+\pause
+\gap
+\item Both load zero, then store clobbers the other
+\item Result: total = 1
+}
+\end{slide}
+
+\begin{slide}{Need for Synchronization}
+\itms{
+\item Problem: Data races occur without synchronization
+\gap
+\item Options:
+\ittms{
+    \item Atomic Instructions: instantaneously modify a value
+    \item Locks: prevent concurrent execution
+}
+\gap
+\item .. it gets worse!
+}
+\end{slide}
+
+\begin{slide}{\hypertarget{prog-a}{Program A}}
+\vspace{-1em}
+\begin{ccode}
+   int flag1 = 0, flag2 = 0;
+
+   void p1 (void *ignored) {
+     flag1 = 1;
+     if (!flag2) { critical_section_1 (); }
+   }
+
+   void p2 (void *ignored) {
+     flag2 = 1;
+     if (!flag1) { critical_section_2 (); }
+   }
+
+   int main () {
+     pthread_t tid;
+     pthread_create (tid, NULL, p1, NULL);
+     p2 (); pthread_join(tid);
+   }
+\end{ccode}
+\itms{
+  \item Can both critical sections run?
+}
+\end{slide}
+
+\begin{slide}{\hypertarget{prog-b}{Program B}}
+\vspace{-1em}
+\begin{ccode}
+   int data = 0, ready = 0;
+
+   void p1 (void *ignored) {
+     data = 2000;
+     ready = 1;
+   }
+
+   void p2 (void *ignored) {
+     while (!ready)
+       ;
+     use(data);
+   }
+\end{ccode}
+\itms{
+  \item Can \texttt{use} be called with value 0?
+}
+\end{slide}
+
+\begin{slide}{\hypertarget{prog-c}{Program C}}
+\begin{ccode}
+   int a = 0, b = 0;
+
+   void p1 (void *ignored) {
+     a = 1;
+   }
+
+   void p2 (void *ignored) {
+     if (a == 1)
+       b = 1;
+   }
+
+   void p3 (void *ignored) {
+     if (b == 1)
+       use(a);
+   }
+\end{ccode}
+\itms{
+  \item Can \texttt{use()}  be called with value 0?
+%If \texttt{p1}--\texttt{3} run concurrently,
+}
+\end{slide}
+
+\begin{slide}{Correct answers}
+\itms{
+  \item Program A:  I don't know
+  \item Program B:  I don't know
+  \item Program C:  I don't know
+  \item Why don't we know?
+  \ittms{
+    \item \Red{It depends on what machine you use}
+    \item If a system provides \emph{sequential consistency}, then
+      answers all No
+    \item But not all hardware provides sequential consistency
+  }
+  \item Note: Examples and other slide content from
+    \cref{sched/readings/shmem-tut.pdf}%
+         {[Adve \& Gharachorloo]}
+}
+\end{slide}
+
+\begin{slide}{Sequential Consistency}
+\begin{block}{Sequential consistency}
+The result of execution is as if all operations were executed in some 
+	sequential order, and the operations of each processor occurred in the 
+	order specified by the program. 
+	\cref{sched/readings/sequential-consistency.pdf}{[Lamport]}
+\end{block}
+\begin{itemize}
+\item Boils down to two requirements:
+\begin{enumerate}
+  \item Maintaining \textit{program order} on individual processors
+  \item Ensuring \textit{write atomicity}
+\end{enumerate}
+\end{itemize}
+\itms{
+  \item Without SC, multiple CPUs can be ``worse'' than preemptive
+    threads
+  \ittms{
+    \item May see results that cannot occur with any interleaving on
+      \rlap{1 CPU}
+  }
+  \item Why doesn't all hardware support sequential consistency?
+}
+\end{slide}
+
+\begin{slide}{SC thwarts hardware optimizations}
+\itms{
+  \item Complicates write buffers 
+  \ittms{
+    \item E.g., read flag$n$ before flag$(2-n)$ written through
+      in \hyperlink{prog-a}{Program A}
+  }
+  \item Can't re-order overlapping write operations
+  \ittms{
+    \item Concurrent writes to different memory modules
+    \item Coalescing writes to same cache line
+  }
+  \item Complicates non-blocking reads
+  \ittms{
+    \item E.g., speculatively prefetch \texttt{data} in
+      \hyperlink{prog-b}{Program B}
+  }
+  \item Makes cache coherence more expensive
+  \ittms{
+    \item Must delay write completion until invalidation/update
+      (\hyperlink{prog-b}{Program~B})
+    \item Can't allow overlapping updates if no globally visible order
+      (\hyperlink{prog-c}{Program~C})
+  } 
+}
+\end{slide}
+
+\begin{slide}{SC thwarts compiler optimizations}
+\itms{
+  \item Code motion
+  \item Caching value in register
+  \ittms{
+    \item Collapse multiple loads/stores of same address into one
+      operation
+%    \item E.g., \texttt{ready} flag in \hyperlink{prog-b}{Program B}
+  }
+  \item Common subexpression elimination
+  \ittms{
+    \item Could cause memory location to be read fewer times
+  }
+  \item Loop blocking
+  \ittms{
+    \item Re-arrange loops for better cache performance
+  }
+  \item Software pipelining 
+  \ittms{
+    \item Move instructions across iterations of a loop to overlap
+      instruction latency with branch cost
+  }
+}
+\end{slide}
+
+\begin{slide}{x86 consistency
+    [\href{http://www.intel.com/content/dam/www/public/us/en/documents/manuals/64-ia-32-architectures-software-developer-vol-3a-part-1-manual.pdf}{Intel 
+    SDM 3A}, \S8.2]}
+\itms{
+  \item x86 supports multiple consistency/caching models
+  \ittms{
+    \item Memory Type Range Registers (MTRR) specify consistency for
+      ranges of physical memory (e.g., frame buffer)
+    \item Page Attribute Table (PAT) allows control for each 4K page
+  }
+  \item Choices include:
+  \ittms{
+    \item \textbf{WB}:  Write-back caching (the default)
+    \item \textbf{WT}:  Write-through caching (all writes go to
+      memory)
+    \item \textbf{UC}:  Uncacheable (for device memory)
+    \item \textbf{WC}:  Write-combining -- weak consistency \& no
+      caching \\
+      (used for frame buffers, when sending a lot of data to GPU)
+  }
+  \item Some instructions have weaker consistency
+  \ittms{
+    \item String instructions (written cache-lines can be re-ordered)
+    \item Special ``non-temporal'' store instructions
+      (\texttt{movnt*}) that bypass cache and can be re-ordered with
+      respect to other writes
+  }
+}
+\end{slide}
+
+
+\defverbatim\rdownwr{
+\small\openup-.5\jot
+\begin{verbatim}
+    volatile int flag1 = 0, flag2 = 0;
+\end{verbatim}
+\begin{verbatim}
+    int p1 (void)               int p2 (void)
+    {                           {
+      register int f, g;          register int f, g;
+      flag1 = 1;                  flag2 = 1;
+      f = flag1;                  f = flag2;
+      g = flag2;                  g = flag1;
+      return 2*f + g;             return 2*f + g;
+    }                           }
+\end{verbatim}}
+
+\begin{frame}
+\frametitle{x86 WB consistency}
+\smallskip
+\itms{
+  \item Old x86s (e.g, 486, Pentium 1) had almost SC
+  \ittms{
+    \item Exception: A read could finish before an earlier write to a
+      different location
+    \item Which of Programs
+      \hyperlink{prog-a}{A},
+      \hyperlink{prog-b}{B},
+      \hyperlink{prog-c}{C} might be affected?
+      \quad \only<2>{\textsl{Just A}}
+  }
+\pause
+  \item Newer x86s also let a CPU read its own writes early (store-to-load 
+      forwarding)
+\rdownwr
+  \ittms{
+    \item E.g., \emph{both} \texttt{p1} and \texttt{p2} can return 2: \\[1ex]
+    \item Older CPUs would wait at ``\texttt{f = \ldots}'' until store
+      complete
+  }
+}
+\end{frame}
+
+\begin{slide}{x86 atomicity}
+\itms{
+  \item \texttt{lock} -- prefix makes a memory instruction atomic
+  \ittms{
+    \item Usually locks bus for duration of instruction (expensive!)
+    \item Can avoid locking if memory already exclusively cached
+    \item All lock instructions totally ordered
+    \item Other memory instructions cannot be re-ordered w.\ locked
+      ones
+  }
+  \item \texttt{xchg} -- Exchange instruction is always locked (without the 
+      prefix)
+  \item \texttt{cmpxchg} -- Compare and exchange is also locked (without the 
+      prefix)
+  \item Special fence instructions can prevent re-ordering
+  \ittms{
+    \item \texttt{lfence} -- can't be reordered w.\ reads (or later
+      writes)
+    \item \texttt{sfence} -- can't be reordered w.\ writes \\
+      (e.g., use after non-temporal stores, before setting a \emph{ready} flag)
+    \item \texttt{mfence} -- can't be reordered w.\ reads or writes
+  }
+
+}
+\end{slide}
+
+\begin{slide}{Assuming sequential consistency}
+\itms{
+  \item Often we reason about concurrent code assuming S.C.
+  \item But for low-level code, \Red{know your memory model!}
+  \ittms{
+    \item May need to sprinkle barriers instructions into your source
+  }
+  \item For most code, avoid depending on memory model
+  \ittms{
+    \item Idea:  If you obey certain rules
+      (\hyperlink{contract}{discussed later})\\
+      \ldots system behavior should be indistinguishable from S.C.
+  }
+  \item Let's for now say we have sequential consistency
+  %\item Later will see alpha which doesn't have SC
+  \item Example concurrent code: Producer/Consumer
+  \ittms{
+    \item \texttt{buffer} stores \texttt{BUFFER\_SIZE} items
+    \item \texttt{count} is number of used slots
+    \item \texttt{out} is next empty buffer slot to fill (if any)
+    \item \texttt{in} is oldest filled slot to consume (if any)
+  }
+}
+\end{slide}
+
+\begin{frame}[fragile]
+\medskip
+\begin{smallccode}
+     void producer (void *ignored) {
+         for (;;) {
+             item *nextProduced = produce_item ();
+             while (count == BUFFER_SIZE)
+                 /* do nothing */;
+             buffer [in] = nextProduced;
+             in = (in + 1) % BUFFER_SIZE;
+             count++;
+         }    
+     }
+
+     void consumer (void *ignored) {
+         for (;;) {
+             while (count == 0)
+                 /* do nothing */;
+             item *nextConsumed =  buffer[out];
+             out = (out + 1) % BUFFER_SIZE;
+             count--;
+             consume_item (nextConsumed);
+         }
+     }       
+\end{smallccode}
+\itms{
+  \item What can go wrong in above threads (even w.\ S.C.)?
+}
+\end{frame}
+
+\begin{slide}{Data races}
+\itms{
+  \item \texttt{count} may have wrong value
+  \item Possible implementation of \Blue{\texttt{count++}}
+          and \Red{\texttt{count-{}-}}
+}
+{
+\begin{tabular}{@{\qquad\qquad}l@{\qquad}l}
+\Blue{register$\gets$count} &
+\Red{register$\gets$count} \\
+\Blue{register$\gets$register $+$ 1} &
+\Red{register$\gets$register $-$ 1} \\
+\Blue{count$\gets$register} &
+\Red{count$\gets$register} \\
+\end{tabular}}
+\itms{
+  \item Possible execution (count one less than correct):
+}
+\qquad\qquad \Blue{register$\gets$count} \\
+\qquad\qquad \Blue{register$\gets$register $+$ 1} \\
+\qquad\qquad \Red{register$\gets$count} \\
+\qquad\qquad \Red{register$\gets$register $-$ 1} \\
+\qquad\qquad \Blue{count$\gets$register} \\
+\qquad\qquad \Red{count$\gets$register} \\
+\end{slide}
+
+\begin{slide}{Data races (continued)}
+\itms{
+  \item What about a single-instruction add?
+  \ittms{
+    \item E.g., i386 allows single instruction \Blue{\texttt{addl
+    \$1,\_count}}
+    \item So implement \texttt{count++/-{}-} with one instruction
+    \item Now are we safe?
+  }
+\pause
+  \item Not atomic on multiprocessor!
+  \ittms{
+    \item Will experience exact same race condition
+    \item Can potentially make atomic with \texttt{lock} prefix
+    \item But \texttt{lock} very expensive
+    \item Compiler won't generate it, assumes you don't want penalty
+  }
+  %\item Note that without SC, even reads can be dangerous
+  \item Need solution to \emph{critical section} problem
+  \ittms{
+    \item Place \texttt{count++} and \texttt{count-{}-} in critical section
+    \item Protect critical sections from concurrent execution
+  }
+}
+\end{slide}
+
+\begin{slide}{Desired properties of solution}
+\itms{
+  \item \emph{Mutual Exclusion}
+  \ittms{
+    \item Only one thread can be in critical section at a time
+  }
+  \item \emph{Progress}
+  \ittms{
+    \item Say no process currently in critical section (C.S.)
+    %\item Threads trying to enter C.S. can't be blocked by those not trying
+    \item One of the processes trying to enter will eventually get in
+  }
+  \item \emph{Bounded waiting}
+  \ittms{
+    \item Once a thread $T$ starts trying to enter the critical
+      section, there is a bound on the number of times other threads
+      get in
+  }
+  \item Note progress vs.\ bounded waiting
+  \ittms{
+    \item If no thread can enter C.S., don't have progress
+    \item If thread $A$ waiting to enter C.S. while $B$ repeatedly
+      leaves and re-enters C.S. \emph{ad infinitum}, don't have
+      bounded waiting
+  }
+}
+\end{slide}
+
+\begin{slide}{Peterson's solution}
+\itms{
+  \item Still assuming sequential consistency
+  \item Assume two threads, $T_0$ and $T_1$
+  \item Variables
+  \ittms{
+    \item \texttt{int not\_turn;} {\color{comment}// not this thread's
+      turn to enter C.S.}
+    \item \texttt{bool wants[2];} {\color{comment}// \texttt{wants[i]}
+      indicates if $T_i$ wants to enter C.S.}
+  }
+  \item Code:
+}
+\begin{ccode}
+ for (;;) { /* assume i is thread number (0 or 1) */
+   wants[i] = true;
+   not_turn = i;
+   while (wants[1-i] && not_turn == i)
+     /* other thread wants in and not our turn */;
+   Critical_section ();
+   wants[i] = false;
+   Remainder_section ();
+ }     
+\end{ccode}
+\end{slide}
+
+\begin{slide}{Does Peterson's solution work?}
+\begin{smallccode}
+ for (;;) { /* code in thread i */
+   wants[i] = true;
+   not_turn = i;
+   while (wants[1-i] && not_turn == i)
+     /* other thread wants in and not our turn */;
+   Critical_section ();
+   wants[i] = false;
+   Remainder_section ();
+ }     
+\end{smallccode}
+\itms{
+  \item Mutual exclusion -- can't both be in C.S.
+  \ittms{
+    \item Would mean \texttt{wants[0] == wants[1] == true}, \\
+          so \texttt{not\_turn} would have blocked one thread from C.S.
+  }
+  \item Progress -- If $T_{1-i}$ not in C.S., can't block $T_i$
+  \ittms{
+    \item Means \texttt{wants[1-i] == false}, so $T_i$ won't loop
+  }
+  \item Bounded waiting -- similar argument to progress
+  \ittms{
+    \item If $T_i$ wants lock and $T_{1-i}$ tries to re-enter,
+      $T_{1-i}$ will set \\
+      \texttt{not\_turn = 1 - i}, allowing $T_i$ in
+  }
+}
+\end{slide}
+
+\begin{slide}{Mutexes}
+\itms{
+  \item Peterson expensive, only works for 2 processes
+  \ittms{
+    \item Can generalize to $n$, but for some fixed $n$
+  }
+  \item Must adapt to machine memory model if not S.C.
+  \ittms{
+    \item Ideally want your code to run everywhere
+  }
+  \item Want to insulate programmer from implementing synchronization
+    primitives
+  \item Thread packages typically provide \emph{mutexes}: \\
+    \code{void mutex_init (mutex_t *m, \ldots);} \\
+    \code{void mutex_lock (mutex_t *m);} \\
+    \code{int mutex_trylock (mutex_t *m);} \\
+    \code{void mutex_unlock (mutex_t *m);} \\
+  \ittms{          
+    \item Only one  thread acuires \texttt{m} at a time, others wait
+  }                
+}                  
+\end{slide}        
+                   
+\begin{slide}{\hypertarget{contract}{Thread API contract}}
+\itms{
+  \item \Red{All global data should be protected by a mutex!}
+  \ittms{
+    \item Global = accessed by more than one thread, at least one
+      write
+    \item Exception is initialization, before exposed to
+      other threads
+    \item This is the responsibility of the application writer
+  }
+}
+\begin{block}{Compiler/Runtime Contract (C, Java, Go, etc.)}
+Assuming no data races the program behaves sequentially consistent.
+\end{block}
+\itms{
+  \item If you use mutexes properly, behavior should be
+    indistinguishable from Sequential Consistency
+  \ittms{
+    \item Responsibility of the threads package \& compiler
+    \item Mutex is broken if you use properly and don't see S.C.
+  }
+  \item OS kernels also need synchronization
+  \ittms{
+    \item Some mechanisms look like mutexes
+    \item But interrupts complicate things (incompatible w.\ mutexes)
+  }
+}
+\end{slide}
+
+
+\begin{slide}{PThread Mutex API}
+\itms{
+\item Function names in this lecture all based on \emph{pthreads}
+\item \code{int pthread_mutex_init(pthread_mutex_t *m,} \\
+    \hspace{12.7em}\code{pthread_mutexattr_t attr)}
+\ittms{
+    \item Initialize a mutex
+}
+\item \code{int pthread_mutex_destroy(pthread_mutex_t *m)}
+\ittms{
+    \item Destroy a mutex
+}
+\item \code{int pthread_mutex_lock(pthread_mutex_t *m)}
+\ittms{
+    \item Acquire a mutex
+}
+\item \code{int pthread_mutex_unlock(pthread_mutex_t *m)}
+\ittms{
+    \item Release a mutex
+}
+\item \code{int pthread_mutex_trylock(pthread_mutex_t *m)}
+\ittms{
+    \item Attempt to acquire a mutex
+    \item Return 0 if successful, otherwise -1 (\code{errno == EBUSY})
+}
+}
+\end{slide}
+
+
+\begin{slide}{Improved producer}
+\begin{ccode}[classoffset=2,morekeywords={mutex_lock,mutex_unlock},keywordstyle=\color{red}]
+mutex_t mutex = MUTEX_INITIALIZER;
+
+void producer (void *ignored) {
+    for (;;) {
+        item *nextProduced = produce_item ();
+
+        mutex_lock (&mutex);
+        while (count == BUFFER_SIZE) {
+          mutex_unlock (&mutex);  /* <--- Why? */
+          thread_yield ();
+          mutex_lock (&mutex);
+        }
+
+        buffer [in] = nextProduced;
+        in = (in + 1) % BUFFER_SIZE;
+        count++;
+        mutex_unlock (&mutex);
+    }    
+}
+\end{ccode}
+\end{slide}
+
+\begin{slide}{Improved consumer}
+\begin{ccode}[classoffset=2,morekeywords={mutex_lock,mutex_unlock},keywordstyle=\color{red}]
+void consumer (void *ignored) {
+    for (;;) {
+        mutex_lock (&mutex);
+        while (count == 0) {
+          mutex_unlock (&mutex);
+          thread_yield ();
+          mutex_lock (&mutex);
+        }
+
+        item *nextConsumed =  buffer[out];
+        out = (out + 1) % BUFFER_SIZE;
+        count--;
+        mutex_unlock (&mutex);
+
+        consume_item (nextConsumed);
+    }
+}       
+\end{ccode}
+\end{slide}
+
+\begin{slide}{Condition variables}
+\itms{
+  \item Busy-waiting in application is a bad idea
+  \ittms{
+    \item Thread consumes CPU even when can't make progress
+    \item Unnecessarily slows other threads and processes
+  }
+  \item Better to inform scheduler of which threads can run
+  \item Typically done with \emph{condition variables}
+  \item \code{int pthread_cond_init(pthread_cond_t *, \ldots);}
+  \ittms{
+    \item Initialize with specific attributes
+  }
+  \item \code{int pthread_cond_wait(pthread_cond_t *c, pthread_mutex_t *m);}
+  \ittms{
+    \item Atomically unlock \texttt{m} and sleep until \texttt{c} signaled
+    \item Then re-acquire \texttt{m} and resume executing
+  }
+  \item \code{int pthread_cond_signal(pthread_cond_t *c);} \\
+	\code{int pthread_cond_broadcast(pthread_cond_t *c);}
+  \ittms{
+    \item Wake one/all threads waiting on \texttt{c}
+  }
+}
+\end{slide}
+
+\begin{slide}{Improved producer}
+\begin{ccode}[classoffset=2,morekeywords={cond_wait,cond_signal},keywordstyle=\color{red}]
+mutex_t mutex = MUTEX_INITIALIZER;
+cond_t nonempty = COND_INITIALIZER;
+cond_t nonfull = COND_INITIALIZER;
+
+void producer (void *ignored) {
+    for (;;) {
+        item *nextProduced = produce_item ();
+
+	mutex_lock(&mutex);
+        while (count == BUFFER_SIZE)
+	  cond_wait(&nonfull, &mutex);
+
+        buffer [in] = nextProduced;
+        in = (in + 1) % BUFFER_SIZE;
+        count++;
+	cond_signal(&nonempty);
+	mutex_unlock(&mutex);
+    }    
+}
+\end{ccode}
+\end{slide}
+
+\begin{slide}{Improved consumer}
+\begin{ccode}[classoffset=2,morekeywords={cond_wait,cond_signal},keywordstyle=\color{red}]
+void consumer (void *ignored) {
+    for (;;) {
+        mutex_lock (&mutex);
+        while (count == 0)
+          cond_wait (&nonempty, &mutex);
+
+        item *nextConsumed =  buffer[out];
+        out = (out + 1) % BUFFER_SIZE;
+        count--;
+        cond_signal (&nonfull);
+        mutex_unlock (&mutex);
+
+        consume_item (nextConsumed);
+    }
+}       
+\end{ccode}
+\end{slide}
+
+\begin{slide}{Re-check conditions}
+\itms{
+  \item Always re-check condition on wake-up
+}
+\vspace*{-.5\baselineskip}
+\begin{ccode}
+        `\Red{while}' (count == 0)  /* not `\Red{if}' */
+          cond_wait (&nonempty, &mutex);
+\end{ccode}
+\itms{
+  \item Else, breaks w.\ spurious wakeup or two consumers
+  \begin{itemize}
+    \item Start with empty buffer, then:
+  \end{itemize}
+}
+{\small\openup-1\jot
+\halign{#\hfil \quad & \quad #\hfil \quad & \quad # \hfil \cr
+\hfil \vrule width0pt depth 8pt{}$C_1$ & \hfil $C_2$ & $P$ \cr
+\texttt{cond\_wait (\ldots);} & & {\texttt{mutex\_lock (\ldots);}}\cr
+& & \hfil $\vdots$ \cr
+& & \texttt{count++;} \cr
+& & \texttt{cond\_signal (\ldots);} \cr
+& {\texttt{mutex\_lock (\ldots);}} & \texttt{mutex\_unlock (\ldots);} \cr
+& \texttt{if (count == 0)} & \cr
+& \hfil $\vdots$ & \cr
+& \emph{use} \texttt{buffer[out]} \ldots & \cr
+& \texttt{count--;} & \cr
+& \texttt{mutex\_unlock (\ldots);} & \cr
+\noalign{\smallskip}
+\multispan{3}
+\emph{use} \texttt{buffer[out]} \ldots
+    \Red{$\;\;\longleftarrow$ No items in buffer}\hfil\cr
+%\texttt{\Red{count-{}-};} & & \cr
+}}
+\end{slide}
+
+
+\defverbatim\condwomutex{
+\begin{ccode}
+             while (count == BUFFER_SIZE) {
+               mutex_unlock (&mutex);
+               cond_wait (&nonfull);
+               mutex_lock (&mutex);
+             }
+\end{ccode}}
+
+\defverbatim[colored]\condwomutexbug{
+\small\openup-.17\baselineskip
+{\color{comment}
+\begin{verbatim}
+   PRODUCER                        CONSUMER
+\end{verbatim}
+}
+\begin{verbatim}
+   while (count == BUFFER_SIZE)
+     mutex_unlock (&mutex);
+                                   mutex_lock (&mutex);
+                                   ...
+                                   count--;
+                                   cond_signal (&nonfull);
+     cond_wait (&nonfull);
+\end{verbatim}
+}
+
+\begin{slide}{Condition variables (continued)}
+\itms{
+  \item Why must \texttt{cond\_wait} both release mutex \& sleep?
+  \item Why not separate mutexes and condition variables?
+}
+\condwomutex
+\begin{overprint}
+\onslide<2->{
+\itms{
+  \item Can end up stuck waiting when bad interleaving
+}
+\condwomutexbug
+}
+\end{overprint}
+\end{slide}
+
+% \begin{slide}{Other thread package features}
+% \itms{
+%   \item Alerts -- cause exception in a thread
+%   %\item Trylock -- don't block if can't acquire mutex
+%   \item Timedwait -- timeout on condition variable
+%   \item Shared locks -- concurrent read accesses to data
+%   \item Thread priorities -- control scheduling policy
+%   \ittms{
+%     \item Mutex attributes allow various forms of \emph{priority
+%         donation} \\
+%       (will be familiar concept after lab 1)
+%   }
+%   \item Thread-specific global data
+%   \item \Red{Different synchronization primitives} (in a few slides)
+%   %% \ittms{
+%   %%   \item Monitors
+%   %%   \item Semaphores
+%   %%   %\item Reader/writer (shared) locks
+%   %% }
+% }
+% \end{slide}
+% 
+% \defverbatim[colored]\muteximp{
+% \begin{smallccode}[classoffset=2,morekeywords={lower_level_lock_t,lk},
+%         keywordstyle=\color{red}]
+%     typedef struct mutex {
+%       bool is_locked;            /* true if locked */
+%       thread_id_t owner;         /* thread holding lock, if locked */
+%       thread_list_t waiters;     /* threads waiting for lock */
+% 
+%       lower_level_lock_t lk;     /* Protect above fields */
+%     };
+% \end{smallccode}
+% }
+% 
+% \begin{frame}
+% \frametitle{Implementing synchronization}
+% \itms{
+%   \item User-visible mutex is straight-forward data structure
+% \muteximp
+%   \item Need lower-level lock \texttt{lk} for mutual exclusion
+%   \ittms{
+%     \item Internally, \texttt{mutex\_*} functions bracket code with \\
+% \texttt{lock(mutex->lk)} \ldots\ \texttt{unlock(mutex->lk)}
+%     \item Otherwise, data races!
+%     (E.g., two threads manipulating \texttt{waiters})
+%   }
+%   \item \Red{How to implement \texttt{lower\_level\_lock\_t}?}
+%   \ittms{
+%     \item Could use Peterson's algorithm, but typically a bad idea \\
+%       (too slow and don't know maximum number of threads)
+%     %\item Instead, use hardware support for synchronization
+%   }
+% }
+% \end{frame}
+% 
+% \begin{slide}{Approach \#1: Disable interrupts}
+% \itms{
+%   \item Only for apps with $n:1$ threads (1 kthread)
+%   \ittms{
+%     \item Cannot take advantage of multiprocessors
+%     \item But sometimes most efficient solution for uniprocessors
+%   }
+%   \item \hypertarget{DNI}Have per-thread ``do not interrupt'' (DNI) bit
+%   \item \texttt{lock (lk)}: sets thread's DNI bit
+%   \item If timer interrupt arrives
+%   \ittms{
+%     \item Check interrupted thread's DNI bit
+%     \item If DNI clear, preempt current thread
+%     \item If DNI set, set ``interrupted'' (I) bit \& resume current
+%       thread
+%   }
+%   \item \texttt{unlock (lk)}: clears DNI bit \emph{and} checks I bit
+%   \ittms{
+%     \item If I bit is set, immediately yields the CPU
+%   }
+% }
+% \end{slide}
+% 
+% \defverbatim\spinlock{
+% \begin{ccode}
+%      #define lock(lockp)    while (test_and_set (lockp))
+%      #define trylock(lockp) (test_and_set (lockp) == 0)
+%      #define unlock(lockp)  *lockp = 0
+% \end{ccode}}
+% 
+% \begin{frame}
+% \frametitle{Approach \#2: Spinlocks}
+% \itms{
+%   \item Most CPUs support atomic read-[modify-]write
+%   %\item Most CPUs have atomic read-write or atomic read-modify-write
+%   \item Example:  \texttt{int test\_and\_set (int *lockp);}
+%   \ittms{
+%     \item Atomically sets \texttt{*lockp = 1} and returns old value
+%     \item Special instruction -- can't be implemented in portable C
+%       ($<$C11)
+%     }
+%   \item Use this instruction to implement \emph{spinlocks}:
+% \spinlock
+%   \item Spinlocks implement mutex's \texttt{lower\_level\_lock\_t}
+%   \item Can you use spinlocks instead of mutexes?
+%   \ittms{
+%     \item Wastes CPU, especially if thread holding lock not running
+%     \item Mutex functions have short C.S., less likely to be preempted
+%     \item On multiprocessor, sometimes good to spin for a bit, then yield
+%   }
+% %  \item But gratuitous context switch has cost
+% %  \ittms{
+% %    \item On MP, sometimes good to spin for a bit, then yield
+% %  }
+% }
+% \end{frame}
+% 
+% \begin{slide}{Synchronization on x86}
+% \itms{
+%   \item Test-and-set only one possible atomic instruction
+%   \item x86 \texttt{xchg} instruction, exchanges reg with mem
+%   \ittms{
+%     \item Can use to implement test-and-set
+%   }
+% }
+% \begin{asm}
+%         _test_and_set:
+%                 movl    4(%esp), %edx   # %edx = lockp
+%                 movl    $1, %eax        # %eax = 1
+%                 xchgl   %eax, (%edx)    # swap (%eax, *lockp)
+%                 ret
+% \end{asm}%$
+% \itms{
+%   \item CPU locks memory system around read and write
+%   \ittms{
+%     \item \texttt{xchgl} \emph{always} acts like it has implicit
+%       \texttt{lock} prefix
+%     \item Prevents other uses of the bus (e.g., DMA)
+%   }
+%   \item Usually runs at memory bus speed, not CPU speed
+%   \ittms{
+%     \item Much slower than cached read/buffered write
+%   }
+% }
+% \end{slide}
+% 
+% \begin{slide}{Synchronization on alpha}
+% \itms{
+%   %\item Another approach: load locked, store conditional
+%   \item \texttt{ldl\_l} -- load locked \\
+%         \texttt{stl\_c} -- store conditional (reg$\gets$0 if not
+%         atomic w.\ \texttt{ldl\_l})
+% }
+% \begin{asm}
+%    _test_and_set:
+%         ldq_l   v0, 0(a0)           # v0 = *lockp (LOCKED)
+%         bne     v0, 1f              # if (v0) return
+%         addq    zero, 1, v0         # v0 = 1
+%         stq_c   v0, 0(a0)           # *lockp = v0 (CONDITIONAL)
+%         beq     v0, _test_and_set   # if (failed) try again
+%         mb
+%         addq    zero, zero, v0      # return 0
+%    1:
+%         ret     zero, (ra), 1  
+% \end{asm}
+% \itms{
+%   \item Note: Alpha memory consistency weaker than x86
+%   \ittms{
+%     \item Want all CPUs to think memory accesses in C.S.
+%     happened after acquiring lock, before releasing
+%     \item \emph{Memory barrier} instruction, \texttt{mb}, ensures
+%       this, like \texttt{mfence} on x86
+%   }
+% }
+% \end{slide}
+% 
+% \defverbatim[colored]\splhigh{
+% \begin{ccode}
+%     int x = splhigh ();   /* Disable interrupts */
+%     /* touch data shared with interrupt handler ... */
+%     splx (x);             /* Restore previous state */
+% \end{ccode}
+% }
+% 
+% \begin{frame}
+% \frametitle{Kernel Synchronization}
+% \itms{
+%   \item \Red{Should kernel use locks or disable interrupts?}
+%   \item Old UNIX had non-preemptive threads, no mutexes
+%   \ittms{
+%     \item Interface designed for single CPU, so \texttt{count++} etc.\ not data race
+%     \item
+%     \ldots\emph{Unless} memory shared with an interrupt handler
+%     \\[1ex]
+%     \splhigh
+%     \item C.f.,
+%       \cref{pintos/pintos_6.html\#SEC101}{Pintos}
+%       \texttt{intr\_disable} / \texttt{intr\_set\_level}
+%   }
+%   \item Used arbitrary pointers like condition variables
+%   \ittms{
+%     \item \texttt{int [t]sleep (void *ident, int priority, ...);} \\
+%       put thread to sleep; will wake up at \texttt{priority}
+%       ($\sim$\texttt{cond\_wait})
+%     \item \texttt{int wakeup (void *ident);} \\
+%       wake up all threads sleeping on \texttt{ident}
+%       ($\sim$\texttt{cond\_broadcast})
+%   }
+% }
+% \end{frame}
+% 
+% \begin{slide}{Kernel locks}
+% \itms{
+%   \item Nowadays, should design for multiprocessors
+%   \ittms{
+%     \item Even if first version of OS is for uniprocessor
+%     \item Someday may want multiple CPUs and need \emph{preemptive}
+%       threads
+%     \item That's why Pintos uses [sleeping] locks \\
+%       (\emph{sleeping} locks means mutexes, as opposed to
+%       \emph{spin}locks)
+%   }
+%   \item Multiprocessor performance needs fine-grained locks
+%   \ittms{
+%     \item Want to be able to call into the kernel on multiple CPUs
+%   }
+%   \item \Red{If kernel has locks, should it ever disable interrupts?}
+% \pause
+%   \ittms{
+%     \item Yes!  Can't sleep in interrupt handler, so can't wait for lock
+%     \item So even modern OSes have support for disabling interrupts
+%     \item Often uses \hyperlink{DNI}{DNI} trick, which is cheaper than masking
+%       interrupts in hardware
+%   }
+% }
+% \end{slide}
+% 
+% %% \begin{slide}{UNIX Synchronization 2}
+% %% \itms{
+% %%   \item Need to relinquish CPU when waiting for events
+% %%   \ittms{
+% %%     \item Disk read, network packet arrival, pipe write, signal, etc.
+% %%   }
+% %%   \item \texttt{int tsleep(void *ident, int priority, ...);}
+% %%   \ittms{
+% %%     \item Switches to another process
+% %%     \item \texttt{ident} is arbitrary pointer---e.g., buffer address
+% %%     \item \texttt{priority} is priority at which to run when woken up
+% %%     \item \textsc{PCATCH}, if ORed into \texttt{priority}, means wake
+% %%           up on signal
+% %%     \item Returns 0 if awakened, or \textsc{ERESTART}/\textsc{EINTR} on
+% %%           signal
+% %%   }
+% %%   \item \texttt{int wakeup(void *ident);}
+% %%   \ittms{
+% %%     \item Awakens all processes sleeping on \texttt{ident}
+% %%     \item Restores SPL to value when they went to sleep \\
+% %%       (so fine to sleep at splhigh)
+% %%   }
+% %% }
+% %% \end{slide}
+% 
+% 
+% %% \begin{slide}{Monitors
+% %%     [BH]\cref{sched/readings/monitors.pdf}{[Hoar]}}
+% %% \itms{
+% %%   \item Programming language construct
+% %%   \ittms{
+% %%     \item Possibly less error prone than raw mutexes, but less flexible too
+% %%     \item Basically a class where only one procedure executes at a time
+% %%   }
+% %% }
+% %% \begin{ccode}
+% %%           monitor monitor-name
+% %%           {
+% %%             // shared variable declarations
+% %%             procedure P1 (...) { ... }
+% %%             ...
+% %%             procedure Pn (...) { ... }
+% 
+% %%             Initialization code (..) { ... }
+% %%           }      
+% %% \end{ccode}
+% %% \itms{
+% %%   \item Can implement mutex w.\ monitor or vice versa
+% %%   \ittms{
+% %%     \item But monitor alone doesn't give you condition variables
+% %%     \item Need some other way to interact w.\ scheduler
+% %%     \item Use \emph{conditions}, which are essentially condition variables
+% %%   }
+% %% }
+% %% \end{slide}
+% 
+% %% \begin{slide}{Monitor implementation}
+% %% \centerline{\includegraphics[height=2.2in]{figs/monitorcond}}
+% %% \medskip
+% %% \itms{
+% %%   \item Queue of threads waiting to get in
+% %%   \ittms{
+% %%     \item Might be protected by spinlock
+% %%   }
+% %%   \item Queues associated with conditions
+% %% }
+% %% \end{slide}
+
+\begin{slide}{Semaphores
+    \href{http://www.cs.utexas.edu/users/EWD/transcriptions/EWD01xx/EWD123.html}{[Dijkstra]}}
+\vspace{-1.5em}
+\begin{columns}
+\column{0.7\textwidth}
+\itms{
+  \item A \emph{Semaphore} is initialized with an integer $N$
+  \ittms{
+    \item \code{int sem_init(sem_t *s, ..., unsigned int n);}
+  }
+  \item Provides two functions:
+  \ittms{
+    \item \code{sem_wait(sem_t *s)}\quad  (originally called $P$)
+    \item \code{sem_signal(sem_t *s)}\quad (\code{sem_post} in PThreads, 
+	originally called $V$)
+  }
+  \item Operation:
+    \texttt{sem\_wait} will return only $N$ more times than 
+    \texttt{sem\_signal} called
+  \ittms{
+    \item Example: If $N==1$, then semaphore is a mutex with
+      \texttt{sem\_wait} as lock and \texttt{sem\_signal} as unlock
+  }
+  \item Semaphores give elegant solutions to some problems
+  \item Linux primarily uses semaphores for sleeping locks
+  \ittms{
+    \item \texttt{sema\_init}, \texttt{down\_interruptible},
+      \texttt{up}, \ldots
+    \item Also reader-writer semaphores, \texttt{rw\_semaphore}
+      \href{http://www.linuxjournal.com/article/5833}{[Love]}
+% Seems abstractions called "lock" in the linux kernel are all
+% spinlocks.  So they are using semaphores as sleeping locks.
+%    \item Evidence might favor mutexes
+%      \href{http://lwn.net/Articles/164802/}{[Molnar1]}, despite 
+      %      size~\href{https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/tree/Documentation/mutex-design.txt?id=refs/tags/v3.17.8}{[Molnar2]}
+  }
+}
+\column{0.3\textwidth}
+\end{columns}
+\end{slide}
+
+\begin{frame}[fragile]
+\frametitle{Semaphore producer/consumer}
+\itms{
+  \item Initialize \texttt{full} to 0 (block consumer when buffer empty)
+  \item Initialize \texttt{empty} to $N$ (block producer when queue full)
+}
+\begin{smallccode}[classoffset=2,morekeywords={sem_wait,sem_signal},keywordstyle=\color{red}]
+     void producer (void *ignored) {
+         for (;;) {
+             item *nextProduced = produce_item ();
+             sem_wait (&empty);
+             buffer [in] = nextProduced;
+             in = (in + 1) % BUFFER_SIZE;
+             sem_signal (&full);
+         }    
+     }
+     void consumer (void *ignored) {
+         for (;;) {
+             sem_wait (&full);
+             item *nextConsumed =  buffer[out];
+             out = (out + 1) % BUFFER_SIZE;
+             sem_signal (&empty);
+             consume_item (nextConsumed);
+         }
+     }       
+\end{smallccode}
+\end{frame}
+
+\end{document}
+
+\begin{slide}{Readers-Writers Problem}
+\itms{
+  \item Multiple threads may access data
+  \ittms{
+    \item \emph{Readers} -- will only observe, not modify data
+    \item \emph{Writers} -- will change the data
+  }
+  \item Goal: allow multiple readers or one single writer
+  \ittms{
+    \item Thus, lock can be \emph{shared} amongst concurrent readers
+  }
+  \item Can implement with other primitives
+  \ittms{
+    \item Keep integer \texttt{i} -- \# or readers or -1 if held by writer
+  }
+}
+\end{slide}
+
+\begin{slide}{Implementing shared locks}
+\vspace*{-2ex}
+\begin{myverb}
+struct sharedlk {
+  int i;
+  mutex_t m;
+  cond_t c;
+};
+
+void AcquireExclusive (sharedlk *sl) {
+  lock (sl->m);
+  while (sl->i) { wait (sl->m, sl->c); }
+  sl->i = -1;
+  unlock (sl->m);
+}
+
+void AcquireShared (sharedlk *sl) {
+  lock (sl->m);
+  while (sl->i < 0) { wait (sl->m, sl->c); }
+  sl->i++;
+  unlock (sl->m);
+}
+\end{myverb}
+\end{slide}
+
+\begin{slide}{shared locks (continued)}
+\begin{myverb}
+void ReleaseShared (sharedlk *sl) {
+  lock (sl->m);
+  if (!--sl->i) signal (sl->c);
+  unlock (sl->m);
+}
+
+void ReleaseExclusive (sharedlk *sl) {
+  lock (sl->m);
+  sl->i = 0;
+  broadcast (sl->c);
+  unlock (sl->m);
+}
+\end{myverb}
+\itms{
+  \item Note:  Must deal with starvation
+}
+\end{slide}
+
+\end{document}
+
+
+
+\begin{slide}{Benign races}
+\itms{
+  \item Sometimes ``cheating'' buys efficiency\ldots
+  \item Care more about speed than accuracy
+}
+\begin{myverb}
+    hits++;  // each time someone accesses web site
+\end{myverb}
+\itms{
+  \item Know you can get away with race
+}
+\begin{myverb}
+    if (!initialized) {
+      lock (m);
+      if (!initialized) { initialize (); initialized = 1; }
+      unlock (m);
+    }
+\end{myverb}
+\end{slide}
+
+\begin{slide}{Detecting data races}
+\itms{
+  \item Static methods (hard)
+  \item Debugging painful---race might occur rarely
+  \item Instrumentation---modify program to trap memory accesses
+  \item Lockset algorithm (eraser) particularly effective:
+  \ittms{
+    \item For each global memory location, keep a ``lockset''
+    \item On each access, remove any locks not currently held
+    \item If lockset becomes empty, abort:  No mutex protects data
+    \item Catches potential races even if they don't occur
+  }
+}
+\end{slide}
+
+
+
+\end{document}
