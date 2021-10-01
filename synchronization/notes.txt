@@ -1,0 +1,23 @@
+* x86 transactional memory
+
+XBEGIN
+XABORT
+XCOMMIT
+
+Design patterns:
+
+   Use to insert in hash table (like fine-grained locks)
+
+   Memory barrier--fill your cache then loop until someone else
+   touches one of the cache lines.  (Like epoll for your cache.)
+
+Note that while transactions avoid deadlock, with transactional memory
+have to be able to fall back to regular locking if the transaction
+doesn't work.
+
+Can nest transactions
+
+* x86 hardware lock elision (HLE)
+
+XACQUIRE
+XRELEASE
