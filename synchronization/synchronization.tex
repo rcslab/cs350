@@ -326,17 +326,17 @@ void spinlock_acquire(struct spinlock *lk)
 %         \texttt{stl\_c} -- store conditional (sets reg to 0 if not atomic
 %         w.\ \texttt{ldl\_l})
 % }
-% \begin{asm}
+% \begin{alphaasm}
 %    _test_and_set:
-%         ldq_l   v0, 0(a0)           # v0 = *lockp (LOCKED)
-%         bne     v0, 1f              # if (v0) return
-%         addq    zero, 1, v0         # v0 = 1
-%         stq_c   v0, 0(a0)           # *lockp = v0 (CONDITIONAL)
-%         beq     v0, _test_and_set   # if (failed) try again
+% 	ldq_l   $v0, 0($a0)           # v0 = *lockp (LOCKED)
+% 	bne     $v0, 1f               # if (v0) return
+% 	addq    $zero, 1, $v0         # v0 = 1
+% 	stq_c   $v0, 0($a0)           # *lockp = v0 (CONDITIONAL)
+% 	beq     $v0, _test_and_set    # if (failed) try again
 %         `{\color{red}mb}'
-%         addq    zero, zero, v0      # return 0
-%    1:   ret     zero, (ra), 1  
-% \end{asm}
+% 	addq    $zero, $zero, $v0     # return 0
+%    1:   ret     $zero, ($ra), 1
+% \end{alphaasm}
 % \itms{
 %   \item Note: Alpha memory consistency much weaker than x86
 %   \item Must insert \emph{memory barrier} instruction,

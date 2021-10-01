@@ -207,47 +207,17 @@
 >------->-------zmm8,zmm9,zmm10,zmm11,zmm12,zmm13,zmm14,zmm15},
 >-------morecomment=[l]\#
 }
-\lstdefinestyle{CSHStyle}{
-    language=csh,
-    basicstyle=\ttfamily,
-    frame=tb,
-    captionpos=b,
-    columns=fullflexible,
-    backgroundcolor=\color{lightgrey},
-    showstringspaces=false,
-}
 
-\lstdefinestyle{CStyle}{
-    language=C,
-    basicstyle=\ttfamily,
-    frame=tb,
-    captionpos=b,
-    columns=fullflexible,
-    backgroundcolor=\color{lightgrey},
-    showstringspaces=false,
-}
+\lstnewenvironment{x64asm}[1][]%
+    {\lstset{language=[x86]Assembler,
+            escapeinside=`',%
+            columns=flexible,%
+            comment=[l]\#,%
+            commentstyle=\color{comment},%
+            basicstyle=\ttfamily\openup-.17\baselineskip,%
+            #1}}%
+    {}
 
-\lstdefinelanguage[x64]{Assembler}
-    [x86masm]{Assembler}
-    {morekeywords={CDQE,CQO,CMPSQ,CMPXCHG16B,JRCXZ,LODSQ,MOVSXD,
->------->-------POPFQ,PUSHFQ,SCASQ,STOSQ,IRETQ,SWAPGS,MOVQ,
->------->-------ADDQ,SUBQ,MULQ,DIVQ,ANDQ,XORQ,INCQ,DECQ,
->------->-------CMPQ,CMPL,
->------->-------RDTSC,RDTSCP,
->------->-------XBEGIN,XEND,XABORT,XTEST,
->------->-------rax,rdx,rcx,rbx,rsi,rdi,rsp,rbp,
->------->-------r8,r8d,r8w,r8b,r9,r9d,r9w,r9b,
->------->-------r10,r10d,r10w,r10b,r11,r11d,r11w,r11b,
->------->-------r12,r12d,r12w,r12b,r13,r13d,r13w,r13b,
->------->-------r14,r14d,r14w,r14b,r15,r15d,r15w,r15b,
->------->-------xmm0,xmm1,xmm2,xmm3,xmm4,xmm5,xmm6,xmm7,
->------->-------xmm8,xmm9,xmm10,xmm11,xmm12,xmm13,xmm14,xmm15,
->------->-------ymm0,ymm1,ymm2,ymm3,ymm4,ymm5,ymm6,ymm7,
->------->-------ymm8,ymm9,ymm10,ymm11,ymm12,ymm13,ymm14,ymm15,
->------->-------zmm0,zmm1,zmm2,zmm3,zmm4,zmm5,zmm6,zmm7,
->------->-------zmm8,zmm9,zmm10,zmm11,zmm12,zmm13,zmm14,zmm15},
->-------morecomment=[l]\#
-}
 
 \lstdefinestyle{AsmStyle}{
     language=[x64]Assembler,
@@ -259,6 +229,10 @@
     backgroundcolor=\color{lightgrey},
     showstringspaces=false,
 }
+
+%
+% MIPS Assembly
+%
 
 \lstdefinelanguage[mips]{Assembler}{%
 	% so listings can detect directives and register names
@@ -293,4 +267,64 @@
 	\$k0,\$k1,\$gp,\$sp,\$fp,\$ra},
 	}[strings,comments,keywords]
 
+\lstnewenvironment{mipsasm}[1][]%
+    {\lstset{language=[mips]Assembler,
+            escapeinside=`',%
+            columns=flexible,%
+            comment=[l]\#,%
+            commentstyle=\color{comment},%
+            basicstyle=\ttfamily\openup-.17\baselineskip,%
+            #1}}%
+    {}
+
+%
+% Alpha Assembly
+%
+
+\lstdefinelanguage[alpha]{Assembler}{%
+	% so listings can detect directives and register names
+	alsoletter={.\$},
+	% strings, characters, and comments
+	morestring=[b]",
+	morestring=[b]',
+	morecomment=[l]\#,
+	% instructions
+	morekeywords={[1]addl,addq,and,beq,bge,bgt,bic,bis,blbc,blbs,ble,blt,bne,br,bsr,%
+	call_pall,%
+	cmoveq,cmovge,cmovgt,cmovlbc,cmovlbs,cmovle,cmovlt,cmovne,%
+	cmpbge,cmpeq,cmple,cmplt,cmpule,cmpult,%
+	ctlz,ctpop,cttz,%
+	ecb,eqv,excb,extbl,extlh,extll,extqh,extql,extwh,extwl,%
+	fetch,fetch_m,implver,%
+	insbl,inslh,insll,insqh,insql,inswh,inswl,%
+	jmp,jsr,jsr_coroutine,%
+	lda,ldah,ldbu,ldwu,ldl,ldl_l,ldq,ldq_l,ldq_u,%
+	mb,mskbl,msklh,mskll,mskqh,mskql,mskwh,mskwl,%
+	mull,mulq,ornot,%
+	prefetch,prefetch_en,prefetch_m,prefetch_men,%
+	rc,ret,rpcc,rs,%
+	sextb,sextw,sll,%
+	sra,srl,stb,stl,stl_c,stq,stq_c,stq_u,stw,%
+	subl,subq,trapb,umulh,wh64,wh64en,wmb,xor,zap,zapnot%
+	},
+	% assembler directives
+	morekeywords={[2].align,.ascii,.asciiz,.byte,.data,.double,.extern,%
+	.float,.globl,.half,.kdata,.ktext,.set,.space,.text,.word},
+    % register names
+    morekeywords={[3]\$v0,%
+	\$t0,\$t1,\$t2,\$t3,\$t4,\$t5,\$t6,\$t7,%
+	\$s0,\$s1,\$s2,\$s3,\$s4,\$s5,\$s6,\$fp,%
+	\$a0,\$a1,\$a2,\$a3\$a4,\$a5,%
+	\$t8,\$t9,\$t10,\$t11,\$ra,\$pv,\$t12,\$at,\$gp,\$sp,\$zero},
+	}[strings,comments,keywords]
+
+\lstnewenvironment{alphaasm}[1][]%
+    {\lstset{language=[alpha]Assembler,
+            escapeinside=`',%
+            columns=flexible,%
+            comment=[l]\#,%
+            commentstyle=\color{comment},%
+            basicstyle=\ttfamily\openup-.17\baselineskip,%
+            #1}}%
+    {}
 
