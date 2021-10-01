@@ -157,3 +157,140 @@
 
 \newcommand{\gap} {\vspace{1em}}
 
+% Instructions
+\newcommand{\instruction}[1]{\texttt{#1}}
+% Code
+\newcommand{\code}[1]{\texttt{\detokenize{#1}}}
+% Command
+\newcommand{\command}[1]{\texttt{\detokenize{#1}}}
+% System Calls
+\newcommand{\syscall}[1]{\texttt{\detokenize{#1}}}
+
+\lstdefinestyle{CSHStyle}{
+    language=csh,
+    basicstyle=\ttfamily,
+    frame=tb,
+    captionpos=b,
+    columns=fullflexible,
+    backgroundcolor=\color{lightgrey},
+    showstringspaces=false,
+}
+
+\lstdefinestyle{CStyle}{
+    language=C,
+    basicstyle=\ttfamily,
+    frame=tb,
+    captionpos=b,
+    columns=fullflexible,
+    backgroundcolor=\color{lightgrey},
+    showstringspaces=false,
+}
+
+\lstdefinelanguage[x64]{Assembler}
+    [x86masm]{Assembler}
+    {morekeywords={CDQE,CQO,CMPSQ,CMPXCHG16B,JRCXZ,LODSQ,MOVSXD,
+>------->-------POPFQ,PUSHFQ,SCASQ,STOSQ,IRETQ,SWAPGS,MOVQ,
+>------->-------ADDQ,SUBQ,MULQ,DIVQ,ANDQ,XORQ,INCQ,DECQ,
+>------->-------CMPQ,CMPL,
+>------->-------RDTSC,RDTSCP,
+>------->-------XBEGIN,XEND,XABORT,XTEST,
+>------->-------rax,rdx,rcx,rbx,rsi,rdi,rsp,rbp,
+>------->-------r8,r8d,r8w,r8b,r9,r9d,r9w,r9b,
+>------->-------r10,r10d,r10w,r10b,r11,r11d,r11w,r11b,
+>------->-------r12,r12d,r12w,r12b,r13,r13d,r13w,r13b,
+>------->-------r14,r14d,r14w,r14b,r15,r15d,r15w,r15b,
+>------->-------xmm0,xmm1,xmm2,xmm3,xmm4,xmm5,xmm6,xmm7,
+>------->-------xmm8,xmm9,xmm10,xmm11,xmm12,xmm13,xmm14,xmm15,
+>------->-------ymm0,ymm1,ymm2,ymm3,ymm4,ymm5,ymm6,ymm7,
+>------->-------ymm8,ymm9,ymm10,ymm11,ymm12,ymm13,ymm14,ymm15,
+>------->-------zmm0,zmm1,zmm2,zmm3,zmm4,zmm5,zmm6,zmm7,
+>------->-------zmm8,zmm9,zmm10,zmm11,zmm12,zmm13,zmm14,zmm15},
+>-------morecomment=[l]\#
+}
+\lstdefinestyle{CSHStyle}{
+    language=csh,
+    basicstyle=\ttfamily,
+    frame=tb,
+    captionpos=b,
+    columns=fullflexible,
+    backgroundcolor=\color{lightgrey},
+    showstringspaces=false,
+}
+
+\lstdefinestyle{CStyle}{
+    language=C,
+    basicstyle=\ttfamily,
+    frame=tb,
+    captionpos=b,
+    columns=fullflexible,
+    backgroundcolor=\color{lightgrey},
+    showstringspaces=false,
+}
+
+\lstdefinelanguage[x64]{Assembler}
+    [x86masm]{Assembler}
+    {morekeywords={CDQE,CQO,CMPSQ,CMPXCHG16B,JRCXZ,LODSQ,MOVSXD,
+>------->-------POPFQ,PUSHFQ,SCASQ,STOSQ,IRETQ,SWAPGS,MOVQ,
+>------->-------ADDQ,SUBQ,MULQ,DIVQ,ANDQ,XORQ,INCQ,DECQ,
+>------->-------CMPQ,CMPL,
+>------->-------RDTSC,RDTSCP,
+>------->-------XBEGIN,XEND,XABORT,XTEST,
+>------->-------rax,rdx,rcx,rbx,rsi,rdi,rsp,rbp,
+>------->-------r8,r8d,r8w,r8b,r9,r9d,r9w,r9b,
+>------->-------r10,r10d,r10w,r10b,r11,r11d,r11w,r11b,
+>------->-------r12,r12d,r12w,r12b,r13,r13d,r13w,r13b,
+>------->-------r14,r14d,r14w,r14b,r15,r15d,r15w,r15b,
+>------->-------xmm0,xmm1,xmm2,xmm3,xmm4,xmm5,xmm6,xmm7,
+>------->-------xmm8,xmm9,xmm10,xmm11,xmm12,xmm13,xmm14,xmm15,
+>------->-------ymm0,ymm1,ymm2,ymm3,ymm4,ymm5,ymm6,ymm7,
+>------->-------ymm8,ymm9,ymm10,ymm11,ymm12,ymm13,ymm14,ymm15,
+>------->-------zmm0,zmm1,zmm2,zmm3,zmm4,zmm5,zmm6,zmm7,
+>------->-------zmm8,zmm9,zmm10,zmm11,zmm12,zmm13,zmm14,zmm15},
+>-------morecomment=[l]\#
+}
+
+\lstdefinestyle{AsmStyle}{
+    language=[x64]Assembler,
+    basicstyle=\footnotesize\ttfamily,
+    frame=tb,
+    captionpos=b,
+    belowskip=0.5em,
+    columns=fullflexible,
+    backgroundcolor=\color{lightgrey},
+    showstringspaces=false,
+}
+
+\lstdefinelanguage[mips]{Assembler}{%
+	% so listings can detect directives and register names
+	alsoletter={.\$},
+	% strings, characters, and comments
+	morestring=[b]",
+	morestring=[b]',
+	morecomment=[l]\#,
+	% instructions
+	morekeywords={[1]abs,abs.d,abs.s,add,add.d,add.s,addi,addiu,addu,%
+	and,andi,b,bc1f,bc1t,beq,beqz,bge,bgeu,bgez,bgezal,bgt,bgtu,%
+	bgtz,ble,bleu,blez,blt,bltu,bltz,bltzal,bne,bnez,break,c.eq.d,%
+	c.eq.s,c.le.d,c.le.s,c.lt.d,c.lt.s,ceil.w.d,ceil.w.s,clo,clz,%
+	cvt.d.s,cvt.d.w,cvt.s.d,cvt.s.w,cvt.w.d,cvt.w.s,div,div.d,div.s,%
+	divu,eret,floor.w.d,floor.w.s,j,jal,jalr,jr,l.d,l.s,la,lb,lbu,%
+	ld,ldc1,lh,lhu,li,ll,lui,lw,lwc1,lwl,lwr,madd,maddu,mfc0,mfc1,%
+	mfc1.d,mfhi,mflo,mov.d,mov.s,move,movf,movf.d,movf.s,movn,movn.d,%
+	movn.s,movt,movt.d,movt.s,movz,movz.d,movz.s,msub,msubu,mtc0,mtc1,%
+	mtc1.d,mthi,mtlo,mul,mul.d,mul.s,mulo,mulou,mult,multu,mulu,neg,%
+	neg.d,neg.s,negu,nop,nor,not,or,ori,rem,remu,rol,ror,round.w.d,%
+	round.w.s,s.d,s.s,sb,sc,sd,sdc1,seq,sge,sgeu,sgt,sgtu,sh,sle,%
+	sleu,sll,sllv,slt,slti,sltiu,sltu,sne,sqrt.d,sqrt.s,sra,srav,srl,%
+	srlv,sub,sub.d,sub.s,subi,subiu,subu,sw,swc1,swl,swr,syscall,teq,%
+	teqi,tge,tgei,tgeiu,tgeu,tlt,tlti,tltiu,tltu,tne,tnei,trunc.w.d,%
+	trunc.w.s,ulh,ulhu,ulw,ush,usw,xor,xori},
+	% assembler directives
+	morekeywords={[2].align,.ascii,.asciiz,.byte,.data,.double,.extern,%
+	.float,.globl,.half,.kdata,.ktext,.set,.space,.text,.word},
+    % register names
+    morekeywords={[3]\$zero,\$at,\$v0,\$v1,\$a0,\$a1,\$a2,\$a3,\$t0,\$t1,\$t2,\$t3,\$t4,
+	\$t5,\$t6,\$t7,\$s0,\$s1,\$s2,\$s3,\$s4,\$s5,\$s6,\$s7,\$t8,\$t9,%
+	\$k0,\$k1,\$gp,\$sp,\$fp,\$ra},
+	}[strings,comments,keywords]
+
+

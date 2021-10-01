@@ -20,7 +20,7 @@
 \usepackage{pgf}
 \usepackage{pgfplots}
 
-\pgfplotsset{compat=1.12}
+\pgfplotsset{compat=1.17}
 
 %
 % Set Fonts
@@ -87,6 +87,16 @@
 
 \lstnewenvironment{asm}[1][]%
     {\lstset{language=[x86masm]Assembler,
+            escapeinside=`',%
+            columns=flexible,%
+            comment=[l]\#,%
+            commentstyle=\color{comment},%
+            basicstyle=\ttfamily\openup-.17\baselineskip,%
+            #1}}%
+    {}
+
+\lstnewenvironment{mipsasm}[1][]%
+    {\lstset{language=[mips]Assembler,
             escapeinside=`',%
             columns=flexible,%
             comment=[l]\#,%
