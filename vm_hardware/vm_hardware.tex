@@ -2,7 +2,7 @@
 
 \documentclass[11pt,aspectratio=169]{beamer}
 
-\usepackage[oldspacing]{rcstalk}
+\usepackage{rcstalk}
 \usepackage{bytefield}
 
 \usetheme{rcstheme}
@@ -226,7 +226,7 @@
 \end{slide}
 
 \begin{slide}{Segmentation mechanics}
-\centerline{\includegraphics[height=2in]{figs/seg-mech}}
+\centerline{\includegraphics[height=1.8in]{figs/seg-mech}}
 \itms{
 \item Each process has a segment table
 \item Each VA indicates a segment and offset:
@@ -296,33 +296,35 @@ physical memory
 \centerline{\includegraphics[width=4in]{figs/fragmentation}}
 \end{slide}
 
-\begin{slide}{Alternatives to hardware MMU}
-\itms{
-%  \item Segmentation
-%  \ittms{
-%    \item Part of each memory reference implicit in segment register\\
-%	  $\mbox{segreg}\gets\langle\mathrm{offset,limit}\rangle$
-%    \item By loading segment register code can be relocated
-%    \item Can enforce protection by restricting segment register loads
+% Bring me back later
+%  \begin{slide}{Alternatives to hardware MMU}
+%  \itms{
+%  %  \item Segmentation
+%  %  \ittms{
+%  %    \item Part of each memory reference implicit in segment register\\
+%  %	  $\mbox{segreg}\gets\langle\mathrm{offset,limit}\rangle$
+%  %    \item By loading segment register code can be relocated
+%  %    \item Can enforce protection by restricting segment register loads
+%  %  }
+%    \item Language-level protection (Java)
+%    \ittms{
+%      \item Single address space for different modules
+%      \item Language enforces isolation
+%      \item Singularity OS does this
+%        \href{http://research.microsoft.com/pubs/52716/tr-2005-135.pdf}{[Hunt]}
+%    }
+%    \bigskip
+%    \item Software fault isolation
+%    \ittms{
+%      \item Instrument compiler output
+%      \item Checks before every store operation prevents modules from
+%  	  trashing each other
+%      \item Google \href{http://code.google.com/p/nativeclient/}{Native Client}
+%            does this with only about 5\% slowdown
+%  \href{http://research.google.com/pubs/archive/34913.pdf}{[Yee]}
+%    }
 %  }
-  \item Language-level protection (Java)
-  \ittms{
-    \item Single address space for different modules
-    \item Language enforces isolation
-    \item Singularity OS does this
-      \href{http://research.microsoft.com/pubs/52716/tr-2005-135.pdf}{[Hunt]}
-  }
-  \item Software fault isolation
-  \ittms{
-    \item Instrument compiler output
-    \item Checks before every store operation prevents modules from
-	  trashing each other
-    \item Google \href{http://code.google.com/p/nativeclient/}{Native Client}
-          does this with only about 5\% slowdown
-\href{http://research.google.com/pubs/archive/34913.pdf}{[Yee]}
-  }
-}
-\end{slide}
+%  \end{slide}
 
 \section{Paging}
 
@@ -395,11 +397,13 @@ physical memory
     \item Separate address space for instructions \& data
     \item I.e., can't read your own instructions with a load
   }
+  \medskip
   \item Entire page table stored in registers
   \ittms{
     \item 8 Instruction page translation registers
     \item 8 Data page translations
   }
+  \medskip
   \item Swap 16 machine registers on each context switch
 }
 \end{slide}
@@ -474,17 +478,26 @@ physical memory
   \end{slide}
   
   \begin{slide}{x86 page translation}
-  \hspace*{-3mm}\input{x86.tex}
+  \begin{figure}
+  \centering
+  \input{x86.tex}
+  \end{figure}
   \end{slide}
   
   \begin{slide}{x86 page directory entry}
   \bigskip
+  \begin{figure}
+  \centering
   \input{pde.tex}
+  \end{figure}
   \end{slide}
   
   \begin{slide}{x86 page table entry}
   \bigskip
+  \begin{figure}
+  \centering
   \input{pte.tex}
+  \end{figure}
   \end{slide}
   
   \begin{slide}{x86 hardware segmentation}
@@ -542,7 +555,7 @@ physical memory
   
   \begin{slide}{TLB details}
   \itms{
-  \item TLB operates at CPU pipeline speed $\Longrightarrow$ small, fast
+  \item TLB operates at CPU pipeline speed $\rightarrow$ small, fast
   \item Complication: what to do when switch address space?
   \ittms{
     \item Flush TLB on context switch (e.g., old x86)
@@ -619,10 +632,6 @@ physical memory
     }
   }
   \end{slide}
-  
-  %\begin{slide}{\cref{pintos/pintos_3.html\#SEC38}{Pintos}
-  %    memory layout}
-  %\centerline{\input{as.tex}}   \centerline{\input{pintos-vm.tex}}   \end{slide}
   
   \section{MIPS: Software Managed MMU}
   
@@ -705,6 +714,7 @@ physical memory
     \bitbox{1}{G}
     \bitbox{8}{} \\
   \end{bytefield}
+  \vspace{-1em}
   \itms{
     \item Page Sizes: Multiples of 4 from 4~kiB--16~MiB
     \ittms{
@@ -722,6 +732,7 @@ physical memory
       \item Only flush TLB entries when reusing a PID
       \item Current PID is stored in {\tt c0\_entryhi}
     }
+    \medskip
     \item Global bit
     \ittms{
       \item Used for pages shared across all address spaces in kseg2 or useg
@@ -734,10 +745,15 @@ physical memory
   \begin{slide}{TLB Instructions}
   \itms{
     \item MIPS co-processor 0 (COP0) provides the TLB functionality
-    \item {\tt tlbwr}: TLB write a random slot
-    \item {\tt tlbwi}: TLB write a specific slot
-    \item {\tt tlbr}: TLB read a specific slot
-    \item {\tt tlbp}: Probe the slot containing an address
+    \medskip
+    \item Four instructions:
+    \ittms{
+      \item {\tt tlbwr}: TLB write a random slot
+      \item {\tt tlbwi}: TLB write a specific slot
+      \item {\tt tlbr}: TLB read a specific slot
+      \item {\tt tlbp}: Probe the slot containing an address
+    }
+    \medskip
     \item For each of these instructions you must load the following registers
     \ittms{
       \item {\tt c0\_entryhi}: high bits of TLB entry
@@ -756,6 +772,7 @@ physical memory
       \item TLB Miss: Generated when the accessing kseg2 without matching entry
       \item TLB Mod: Generated when writing to read-only page
     }
+    \medskip
     \item UTLB handler is seperate from general exception handler
     \ittms{
       \item UTLBs are very frequent and require a hand optimized path
@@ -883,7 +900,7 @@ physical memory
     \item Shared memory
     \item Copy-on-write (\texttt{fork}, \texttt{mmap}, etc.)
     }
-    \item Next time: detailed discussion on MIPS
+    \item Next time: detailed discussion on operating system side
   }
   \end{slide}
 
