@@ -671,26 +671,26 @@
 
 % OLDSPLIT
 
-\begin{slide}{Virtual memory goals}
-\centerline{\includegraphics[width=112mm]{vmhilevel}}
-\vspace{-2em}
-\itms{
-  \item Give each program its own ``virtual'' address space
-  \ittms{
-    \item At run time, Memory-Management Unit relocates each load,
-      store to actual memory\ldots\ App doesn't see physical memory
-  }
-  \item Enforces protection
-  \item Allows programs to see more memory than exists
-}
-\end{slide}
-
-\begin{frame}{Paging}
-\centerline{\includegraphics[height=2.7in]{figs/pagefault}}
-\itms{
-  \item Use disk to simulate larger virtual than physical mem
-}
-\end{frame}
+%  \begin{slide}{Virtual memory goals}
+%  \centerline{\includegraphics[width=112mm]{vmhilevel}}
+%  \vspace{-2em}
+%  \itms{
+%    \item Give each program its own ``virtual'' address space
+%    \ittms{
+%      \item At run time, Memory-Management Unit relocates each load,
+%        store to actual memory\ldots\ App doesn't see physical memory
+%    }
+%    \item Enforces protection
+%    \item Allows programs to see more memory than exists
+%  }
+%  \end{slide}
+%  
+%  \begin{frame}{Paging}
+%  \centerline{\includegraphics[height=2.7in]{figs/pagefault}}
+%  \itms{
+%    \item Use disk to simulate larger virtual than physical mem
+%  }
+%  \end{frame}
 
 % \section{OS/161 Virtual Memory}
 
@@ -982,10 +982,6 @@
 
 \begin{slide}{More VM system calls}
 \itms{
-  \item \texttt{int msync(void *addr, size\_t len, int flags);}
-  \ittms{
-    \item Flush changes of mmapped file to backing store
-  }
   \item \texttt{int munmap(void *addr, size\_t len)}
   \ittms{
     \item Removes memory-mapped object
@@ -994,9 +990,17 @@
   \ittms{
     \item Changes protection on pages to or of \texttt{PROT\_}\ldots
   }
+  \item \texttt{int msync(void *addr, size\_t len, int flags);}
+  \ittms{
+    \item Flush changes of mmapped file to backing store
+  }
   \item \texttt{int mincore(void *addr, size\_t len, char *vec)}
   \ittms{
     \item Returns in \texttt{vec} which pages present
+  }
+  \item \texttt{int madvise(void *addr, size\_t len, int behav)}
+  \ittms{
+    \item Advise the OS on memory use
   }
 }
 \end{slide}
