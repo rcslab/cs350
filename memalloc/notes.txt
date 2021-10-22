@@ -1,0 +1,4 @@
+Maybe should implement a very simple malloc, and go over the code,
+first.  Otherwise, people who don't get the basic idea aren't going
+to get all the finer points of performance-critical placement
+decisions.
