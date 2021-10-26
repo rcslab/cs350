@@ -1,0 +1,216 @@
+%% -*- LaTeX -*-
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{lectureb}
+
+\DeclareOption{oldspacing}{
+  \setbeamersize{text margin left=1.5em,text margin right=1.5em}
+  %\setbeamersize{text margin left=5.8mm,text margin right=5.8mm}
+  % With 11pt font (1em = 11pt), 1.5em is about 5.8mm
+  \setlength\leftmargini{1.5em}
+  \setlength\leftmarginii{1.5em}
+  \setlength\leftmarginiii{1.5em}
+
+  % Prosper did the equivalent of \linespread{1.18}, but it looks
+  % better if the extra space goes only between items.
+  \linespread{1.09}
+  \newlength\extravskip
+  \setlength\extravskip{0.2\baselineskip}
+  \xdef\@listi{\@listi\advance\itemsep by\extravskip\relax}
+  \xdef\@listii{\@listii\advance\itemsep by\extravskip
+                \partopsep0pt
+                \advance\topsep by\extravskip
+                \relax}
+  \xdef\@listiii{\@listiii\advance\itemsep by\extravskip\relax}
+  \let\@listI=\@listi
+}
+\ProcessOptions\relax
+
+% http://tex.stackexchange.com/questions/9261/using-opacity-in-tikz-causes-strange-rendering-in-acrobat
+% http://tex.stackexchange.com/questions/29523/inkscape-pdf-includegraphics-xelatex-changed-colors/29532
+\pdfpageattr{/Group <</S /Transparency /I true /CS /DeviceRGB>>} 
+
+%\setbeamercovered{transparent}
+
+%\hypersetup{pdfpagemode=FullScreen}
+\hypersetup{colorlinks=true}
+
+%% Show overlay numbers in PDF page labels of overlay slides to make
+%% editing easier...
+\pdfstringdefDisableCommands{%
+  \renewcommand*{\insertframenumber}{%
+    \ifnum\value{page}=\beamer@framestartpage\relax
+    \theframenumber
+    \else\theframenumber-\the\numexpr1+\value{page}-\beamer@framestartpage\fi
+  }%
+}
+
+% Show outline at each section, but don't highlight links of current
+% section won't be highlighted.
+\AtBeginSection[]
+{
+  \begin{frame}<beamer>
+    \hypersetup{hidelinks}
+    \frametitle{Outline}
+    \tableofcontents[currentsection]
+  \end{frame}
+}
+
+%
+% Hyphen that shrinks appropriately in math mode (unlike, e.g., \mbox{SHA-1})
+%
+\newcommand{\hyph}{{\mathrm{{\mathchar"002D}}}}
+
+%
+% Some symbols
+%
+\def\sqbullet{\vrule depth -.2ex height 1.2ex width 1ex\relax}
+
+%
+% Some colors
+%
+\let\Red=\alert
+\newcommand<>{\Blue}[1]{{\color#2{beamer@blendedblue}#1}}
+%\newcommand<>{\Blue}[1]{{\color#2{beamer@blendedblue}#1}}
+%% \newcommand{\Red}[1]{\mbox{}{\color[rgb]{1,0,0}#1}}
+%% \newcommand{\Blue}[1]{\mbox{}{\color[rgb]{0,0,1}#1}}
+%% \newcommand{\LtGreen}[1]{\mbox{}{\color[rgb]{0,1,0}#1}}
+\newcommand{\Green}[1]{\mbox{}{\color[rgb]{0,.8,0}#1}}
+\newcommand{\Black}[1]{\mbox{}{\color[rgb]{0,0,0}#1}}
+\newcommand{\Maroon}[1]{\mbox{}{\color[rgb]{.79,.19,.38}#1}}
+\newcommand{\Purple}[1]{\mbox{}{\color[rgb]{.5,0,1}#1}}
+%% %\newcommand{\Orange}[1]{\mbox{}{\color[rgb]{1,.65,0}#1}}
+\newcommand{\Orange}[1]{\mbox{}{\color[rgb]{.9,.55,0}#1}}
+\newcommand{\Magenta}[1]{\mbox{}{\color[rgb]{1,0,1}#1}}
+%% \newcommand{\Grey}[1]{\mbox{}{\color[rgb]{.7,.7,.7}#1}}
+
+\newenvironment{redbulletenv}%
+{\only{\setbeamercolor{\beameritemnestingprefix item}{parent=alerted text}%
+    \setbeamercolor{sub\beameritemnestingprefix item}{parent=local structure}%
+}}{}
+
+%
+% Some much better colors.  See:
+% http://www.perceptualedge.com/articles/visual_business_intelligence/rules_for_using_color.pdf
+%
+\definecolor{few-gray-bright}{HTML}{010202}
+\definecolor{few-red-bright}{HTML}{EE2E2F}
+\definecolor{few-green-bright}{HTML}{008C48}
+\definecolor{few-blue-bright}{HTML}{185AA9}
+\definecolor{few-orange-bright}{HTML}{F47D23}
+\definecolor{few-purple-bright}{HTML}{662C91}
+\definecolor{few-brown-bright}{HTML}{A21D21}
+\definecolor{few-pink-bright}{HTML}{B43894}
+
+\definecolor{few-gray}{HTML}{737373}
+\definecolor{few-red}{HTML}{F15A60}
+\definecolor{few-green}{HTML}{7AC36A}
+\definecolor{few-blue}{HTML}{5A9BD4}
+\definecolor{few-orange}{HTML}{FAA75B}
+\definecolor{few-purple}{HTML}{9E67AB}
+\definecolor{few-brown}{HTML}{CE7058}
+\definecolor{few-pink}{HTML}{D77FB4}
+
+\definecolor{few-gray-light}{HTML}{CCCCCC}
+\definecolor{few-red-light}{HTML}{F2AFAD}
+\definecolor{few-green-light}{HTML}{D9E4AA}
+\definecolor{few-blue-light}{HTML}{B8D2EC}
+\definecolor{few-orange-light}{HTML}{F3D1B0}
+\definecolor{few-purple-light}{HTML}{D5B2D4}
+\definecolor{few-brown-light}{HTML}{DDB9A9}
+\definecolor{few-pink-light}{HTML}{EBC0DA}
+
+%\usepackage{fancyvrb}
+
+%
+% Some verbatim environments
+%
+\begingroup \catcode `|=0 \catcode `[= 1
+\catcode`]=2 \catcode `\{=12 \catcode `\}=12
+\catcode`\\=12 |gdef|@xmyverb#1\end{myverb}[#1|end[myverb]]
+|endgroup
+\def\myverb{\begingroup\scriptsize\openup-1\jot%
+\@verbatim \frenchspacing\@vobeyspaces \@xmyverb}
+\def\endmyverb{\if@newlist \leavevmode\fi\endtrivlist\endgroup}
+
+%
+% Listings with ` and ' as escape codes
+%
+\definecolor{comment}{rgb}{0,0,1}
+\usepackage{listings}
+\lstdefinestyle{ccode}{
+  language=C,escapeinside=`',columns=flexible,commentstyle=\color{comment},
+  basicstyle=\ttfamily
+}
+\lstnewenvironment{ccode}[1][]%
+    {\lstset{style=ccode,basicstyle=\ttfamily\openup-.17\baselineskip,#1}}%
+    {}
+\lstnewenvironment{smallccode}[1][]%
+    {\lstset{style=ccode,%
+        basicstyle=\small\ttfamily\openup-.17\baselineskip,#1}}%
+    {}
+
+\lstnewenvironment{asm}[1][]%
+    {\lstset{language=[x86masm]Assembler,
+            escapeinside=`',%
+            columns=flexible,%
+            comment=[l]\#,%
+            commentstyle=\color{comment},%
+            basicstyle=\ttfamily\openup-.17\baselineskip,%
+            #1}}%
+    {}
+
+% Prosper compatibility
+% Note, make sure you never have:
+% {...
+% \end{slide}}
+% As the closing } will mess up verbatim compatibility.  You must say:
+% \end{slide}
+% }  % - where the \end{slide} is on its own line
+\newenvironment{slide}[1]%
+               {\begin{frame}[fragile,environment=slide]
+                       \frametitle{{#1}}%
+               \par\vskip0.5\baselineskip minus 0.2\baselineskip}
+               {\end{frame}}
+\def\widen#1{}
+
+%
+% And the \itms and \ittms macros for bulleted lists
+%
+\let\slname=\frametitle
+\newcommand{\itms}[1]{\par\begin{itemize}#1\end{itemize}}
+\let\ittms\itms
+\let\itttms\ittms
+%\newcommand{\itmpar}[1]{\par\hangindent=3pc\hangafter=1{\bf #1}}
+
+%
+% Extension codes
+%
+\makeatletter
+\newcommand{\extensioncode}{{%
+\@ifundefined{theextensioncode}{\input{extensioncode}}{}%
+\setbox0=\hbox{\texttt{\theextensioncode{}}}%
+\@ifundefined{exposeextensioncode}%
+    {\hbox to\wd0{\cleaders\vrule height \ht0 depth \dp0\hfill}}%
+    {\unhbox0}%
+}}
+\makeatother
+
+\title{CS350: Operating Systems}
+\author{Ali Mashtizadeh}
+\institute{University of Waterloo}
+\date{}
+\newcommand{\cref}[2]{\href{https://rcs.uwaterloo.ca/~ali/cs350-f19/#1}{#2}}
+
+%
+% This string gets extracted as the name of the link for index.html on
+% the lecture notes page.  It is an error not to call topic.
+%
+\makeatletter
+\newcommand{\topic}[1]{%
+\def\my@topic{#1}\immediate\write16{Lecture Topic: \my@topic}}
+\makeatother
+
+\AtEndDocument{\expandafter\ifx\csname my@topic\endcsname\relax%
+% This error happens if you don't call \topic
+\ErrorMustCallTopic\fi}

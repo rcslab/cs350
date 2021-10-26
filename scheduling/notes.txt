@@ -1,0 +1,5 @@
+In description of fair queuing, sort of glossed over what time is.
+The point is that virtual time advances at a rate inversely proportional
+to the number of flows with packets queued, which tne corresponds to SVT
+(for BFT) and global_pass (for stride scheduling).  Without explaining
+that, the fair queuing analogy gets lost on people.

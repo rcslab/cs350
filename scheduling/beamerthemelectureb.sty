@@ -1,0 +1,61 @@
+
+\mode<presentation>
+
+\RequirePackage[sc]{mathpazo}
+\RequirePackage{helvet}
+%\renewcommand{\rmdefault}{ppl}
+%\renewcommand{\sfdefault}{phv}
+%\renewcommand{\ttdefault}{cmtt}
+\usefonttheme{serif}
+%\setbeamercovered{transparent}
+
+\setbeamertemplate{frametitle}[default][center]
+\setbeamerfont{frametitle}{size=\LARGE,series=\bfseries}
+\setbeamerfont{framesubtitle}{parent=frametitle,size=\normalsize}
+\setbeamerfont{block title}{parent={structure,block body},%
+  family=\sffamily,size=\small,series=\bfseries}
+
+\defbeamertemplate*{navigation symbols}{no sections}%
+{\hbox{\hbox{\insertframenavigationsymbol}
+    \hbox{\insertbackfindforwardnavigationsymbol}}}
+
+\setbeamercolor{page number in head/foot}{fg=black,bg=white}
+
+\defbeamertemplate*{footline}{navigation and frame number}%
+{%
+  %\leavevmode\kern1em\usebeamertemplate***{navigation symbols}%
+  \hfill
+  \raise1pt\hbox{\usebeamercolor[fg]{page number in head/foot}%
+  \usebeamerfont{page number in head/foot}%
+  \insertframenumber\,/\,\inserttotalframenumber}\kern1em\vskip2pt%
+}
+\setbeamertemplate{sidebar right}{}
+
+\setbeamertemplate{blocks}[rounded][shadow]
+\setbeamertemplate{title page}[default][colsep=-4bp,rounded=true,shadow]
+\setbeamertemplate{part page}[default][colsep=-4bp,rounded=true,shadow]
+\setbeamerfont{title}{parent=frametitle,size=\LARGE}
+\setbeamerfont{institute}{size=\footnotesize}
+
+\setbeamertemplate{itemize item}[circle]
+\setbeamertemplate{itemize subitem}{\textbf{-}}
+\setbeamertemplate{itemize subsubitem}%
+    {\scriptsize\raise1pt\hbox{\donotcoloroutermaths$\triangleright$}}
+
+\setbeamerfont{item}{parent=structure,series=\bfseries}
+\setbeamerfont{subitem}{parent=item,series=\mdseries,size=\small}
+\setbeamerfont{itemize/enumerate body}{series=\bfseries,size=\large}
+\setbeamerfont{itemize/enumerate subbody}{series=\mdseries,size=\small}
+\setbeamerfont{itemize/enumerate subsubbody}{parent=itemize/enumerate
+  subbody,size=\small}
+
+\usecolortheme{rose}
+\setbeamercolor{block title}{fg=beamer@blendedblue,bg=beamer@blendedblue!20}
+%\setbeamercolor{structure}{fg=black}
+
+\setbeamertemplate{section in toc}[circle]
+\setbeamertemplate{section in toc shaded}[default][100]
+\setbeamercolor{section in toc shaded}{fg=black}
+\setbeamercolor{section in toc}{parent=alerted text}
+\mode
+<all>
