@@ -108,27 +108,27 @@
 }
 \end{slide}
 
-\begin{slide}{View CPU and I/O devices the same}
-\itms{
-  \item CPU is one of several devices needed by users' jobs
-  %\item An I/O device is like a special-purpose CPU
-  \ittms{
-    \item CPU runs compute jobs, Disk drive runs disk jobs, etc.
-    \item With network, part of job may run on remote CPU
-%    \item ``special purpose'' = disk drive can only run a disk job, tape
-%      drive a tape job, \ldots
-  }
-  \item Scheduling 1-CPU system with $n$ I/O devices like scheduling
-    asymmetric $(n+1)$-CPU multiprocessor
-  \ittms{
-    \item Result: all I/O devices + CPU busy $\rightarrow$ n+1 fold
-      speedup! \\[2mm]
-      %\centerline{\includegraphics[width=4.0in]{figs/iocpu}}
-      \centerline{\includegraphics[width=80mm]{overlap}}
-    \item Overlap them just right?  throughput will be almost doubled
-  }
-}
-\end{slide}
+% \begin{slide}{View CPU and I/O devices the same}
+% \itms{
+%   \item CPU is one of several devices needed by users' jobs
+%   %\item An I/O device is like a special-purpose CPU
+%   \ittms{
+%     \item CPU runs compute jobs, Disk drive runs disk jobs, etc.
+%     \item With network, part of job may run on remote CPU
+% %    \item ``special purpose'' = disk drive can only run a disk job, tape
+% %      drive a tape job, \ldots
+%   }
+%   \item Scheduling 1-CPU system with $n$ I/O devices like scheduling
+%     asymmetric $(n+1)$-CPU multiprocessor
+%   \ittms{
+%     \item Result: all I/O devices + CPU busy $\rightarrow$ n+1 fold
+%       speedup! \\[2mm]
+%       %\centerline{\includegraphics[width=4.0in]{figs/iocpu}}
+%       \centerline{\includegraphics[width=80mm]{overlap}}
+%     \item Overlap them just right?  throughput will be almost doubled
+%   }
+% }
+% \end{slide}
 
 \begin{frame}
 \frametitle{Bursts of computation \& I/O}
@@ -325,28 +325,28 @@ length less than remaining time of current executing process, preempt
 \centerline{\includegraphics[height=3in]{figs/tt-vs-q}}
 \end{slide}
 
-\begin{slide}{Two-level scheduling}
-\itms{
-  \item Switching to swapped out process very expensive
-  \ittms{
-    \item Swapped out process has most memory pages on disk
-    \item Will have to fault them all in while running
-    \item One disk access costs $\sim$10ms.  On 1GHz machine, 10ms = 10
-      million cycles!
-  }
-  \item Context-switch-cost aware scheduling
-  \ittms{
-    \item Run in-core subset for ``a while''
-    \item Then swap some between disk and memory
-  }
-  \item How to pick subset?  How to define ``a while''?
-  \ittms{
-    \item View as scheduling \emph{memory} before scheduling CPU
-    \item Swapping in process is cost of memory ``context switch''
-    \item So want ``memory quantum'' much larger than swapping cost
-  }
-}
-\end{slide}
+% \begin{slide}{Two-level scheduling}
+% \itms{
+%   \item Switching to swapped out process very expensive
+%   \ittms{
+%     \item Swapped out process has most memory pages on disk
+%     \item Will have to fault them all in while running
+%     \item One disk access costs $\sim$10ms.  On 1GHz machine, 10ms = 10
+%       million cycles!
+%   }
+%   \item Context-switch-cost aware scheduling
+%   \ittms{
+%     \item Run in-core subset for ``a while''
+%     \item Then swap some between disk and memory
+%   }
+%   \item How to pick subset?  How to define ``a while''?
+%   \ittms{
+%     \item View as scheduling \emph{memory} before scheduling CPU
+%     \item Swapping in process is cost of memory ``context switch''
+%     \item So want ``memory quantum'' much larger than swapping cost
+%   }
+% }
+% \end{slide}
 
 \begin{slide}{Priority scheduling}
 \itms{
@@ -524,22 +524,22 @@ length less than remaining time of current executing process, preempt
 }
 \end{slide}
 
-\begin{slide}{Multiprocessor scheduling (cont)}
-\itms{
-  \item Want related processes scheduled together
-  \ittms{
-    \item Good if threads access same resources (e.g., cached files)
-    \item Even more important if threads communicate often, \\
-      otherwise must context switch to communicate
-  }
-  \item \emph{Gang scheduling}---schedule all CPUs synchronously
-  \ittms{
-    \item With synchronized quanta, easier to schedule related
-       processes/threads together
-  }
-\centerline{\includegraphics[width=3in]{figs/gang}}
-}
-\end{slide}
+% \begin{slide}{Multiprocessor scheduling (cont)}
+% \itms{
+%   \item Want related processes scheduled together
+%   \ittms{
+%     \item Good if threads access same resources (e.g., cached files)
+%     \item Even more important if threads communicate often, \\
+%       otherwise must context switch to communicate
+%   }
+%   \item \emph{Gang scheduling}---schedule all CPUs synchronously
+%   \ittms{
+%     \item With synchronized quanta, easier to schedule related
+%        processes/threads together
+%   }
+% \centerline{\includegraphics[width=3in]{figs/gang}}
+% }
+% \end{slide}
 
 % \begin{slide}{Thread scheduling}
 % \itms{
@@ -765,29 +765,37 @@ length less than remaining time of current executing process, preempt
 }
 \end{slide}
 
-\begin{slide}{BVT example: Search engine}
+% \begin{slide}{BVT example: Search engine}
+% \itms{
+% \item Common queries 150 times faster than uncommon
+% \ittms{
+%   \item Have 10-thread pool of threads to handle requests
+%   \item Assign $W_i$ value sufficient to process fast query (say 50)
+% }
+% \item Say 1 slow query, small trickle of fast queries
+% \ittms{
+% \item    Fast queries come in, warped by 50, execute immediately
+% \item    Slow query runs in background
+% }
+% \item  Say 1 slow query, but many fast queries
+% \ittms{
+% \item    At first, only fast queries run
+% \item    But SVT is bounded by $A_i$ of slow query thread $i$
+% \item    Eventually Fast query thread $j$ gets $A_j = max (A_j, SVT) =
+%   A_j$, and eventually $A_j - \mathrm{warp}_j > A_i$.
+% \item    At that point thread $i$ will run again, so no starvation
+% }
+% }
+% \end{slide}
+
+\begin{slide}{Lottery Scheduler \cref{readings/lottery.pdf}{[Waldspurger]}}
 \itms{
-\item Common queries 150 times faster than uncommon
-\ittms{
-  \item Have 10-thread pool of threads to handle requests
-  \item Assign $W_i$ value sufficient to process fast query (say 50)
-}
-\item Say 1 slow query, small trickle of fast queries
-\ittms{
-\item    Fast queries come in, warped by 50, execute immediately
-\item    Slow query runs in background
-}
-\item  Say 1 slow query, but many fast queries
-\ittms{
-\item    At first, only fast queries run
-\item    But SVT is bounded by $A_i$ of slow query thread $i$
-\item    Eventually Fast query thread $j$ gets $A_j = max (A_j, SVT) =
-  A_j$, and eventually $A_j - \mathrm{warp}_j > A_i$.
-\item    At that point thread $i$ will run again, so no starvation
-}
+\item Reading assignment a great paper and simple algorithm
+\gap
+\item Randomly select a process to run!
+\gap
+\item Process priorities are determined by a number of tickets (or shares)
 }
 \end{slide}
-
-
 
 \end{document}
