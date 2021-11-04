@@ -1,0 +1,19 @@
+This lecture has a bit of overlap with the next one, particularly on
+FFS.
+
+A better organization might be to consolidate a bit, then add stuff
+about LFS and logical volume management/RAID to the next lecture.
+Even though LFS itself is not used much these days, the idea of logs
+is important enough that it is probably worth more than the few slides
+on a write-ahead log for XFS.  Also, given the synergy between LFS and
+RAID5, not to mention things like NetApp's WAFL that were probably
+heavily inspired by LFS.
+
+Another thing missing from this lecture and the next is some kind of
+"contract" between the application and the file system.  I never
+explicitly state what a file system should guarantee--namely that if
+you've called fsync your file will be there, and that if you haven't
+modified a file within the last 30 seconds, then that file should be
+there after a reboot.  Explicitly stating that (rather than implicitly
+appealing to it) might make the whole synchronous disk writes thing
+easier to explain.
