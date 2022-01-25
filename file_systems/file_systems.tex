@@ -9,23 +9,10 @@
 \usepackage{tikz}
 \usetikzlibrary{positioning,shapes,fit,backgrounds,shadows,chains}
 
-%\newcommand{\map}[3]%
-%  {{\def\in{#1}\def\map{#2}\def\out{#3}\input{map}}}
 \newcommand{\map}[3]{\leavevmode%
 \hbox to1in{\Maroon{#1}\rightarrowfill}%
 \Blue{\framebox[1in][c]{\strut #2}}%
 \hbox to1in{\rightarrowfill\Maroon{#3}}}
-
-%\def\cents{\hbox{\rm\rlap{\hspace*{.45ex}\vrule height 1.2ex depth .25ex}c}}
-\makeatletter
-\DeclareRobustCommand{\cents}%
-  {\def\bx{bx}\def\f/{\f@family\ifx\f@series\bx b\else r\fi}%
-      \font\rawpal=\f/ at\f@size pt\rawpal\char162}
-\makeatother
-% Alternatively
-%\usepackage[TS1,T1]{fontenc}
-%\def{\cents}{\UseTextSymbol{TS1}{\textcent}}
-
 
 \begin{document}
 
@@ -267,13 +254,12 @@ Persistence      & Non-volatile & Non-volatile & Volatile \\
   \item File abstraction:
   \ittms{
     \item User's view: named sequence of bytes \\
-      \includegraphics[width=3in]{figs/namedbytes}   
+      \includegraphics[width=3in]{figs/namedbytes}
 \begin{tikzpicture}
 \end{tikzpicture}
     \item FS's view: collection of disk blocks
     \item File system's job: translate name \& offset to disk blocks:
-      \\[.5ex]
-      \map{\{file, offset\}}{FS}{disk address}
+	\map{\{file, offset\}}{FS}{disk address}\medskip
   }
   \item File operations:
   \ittms{
@@ -431,6 +417,7 @@ Persistence      & Non-volatile & Non-volatile & Volatile \\
 \end{slide}
 
 \begin{slide}{Linked files}
+\vspace{-1em}
 \itms{
   \item Basically a linked list on disk.
   \ittms{
@@ -601,6 +588,7 @@ Persistence      & Non-volatile & Non-volatile & Volatile \\
 \end{slide}
 
 \begin{slide}{More about inodes}
+\vspace{-1em}
 \itms{
   \item Inodes are stored in a fixed-size array
   \ittms{
@@ -1047,17 +1035,7 @@ Block size & space wasted & file bandwidth \\
     \item \href{http://www.stanford.edu/~ouster/cgi-bin/papers/lfs.pdf}{LFS}:
       Hoard data, write out MB at a time
   }
-  \item Next lecture:
-  \ittms{
-    \item FFS in more detail
-    \item More advanced, modern file systems
-  }
 }
 \end{slide}
-
-%% \begin{slide}{PSA}
-%% \vspace*{.5in}
-%% \centerline{\includegraphics[width=4in]{vote}}
-%% \end{slide}
 
 \end{document}

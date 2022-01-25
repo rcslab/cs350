@@ -1,0 +1,1006 @@
+%% -*- Lecture -*-
+
+\documentclass[11pt,aspectratio=169]{beamer}
+
+\usepackage{rcstalk}
+\usetheme{rcstheme}
+
+\topic{Advanced File Systems}
+\subtitle{Lecture 13: Advanced File Systems}
+
+\usepackage{tikz}
+\usetikzlibrary{chains,shadows.blur}
+
+\tikzset{
+    only/.code args={<#1>#2}{\only<#1>{\pgfkeysalso{#2}}},
+}
+
+\newcommand\tikznode[3][anchor=base]%
+{\tikz[remember picture,baseline,inner sep=0]{\node[#1] (#2) {#3};}}
+\newcommand\annotate[4][(label) -- (text)]%
+{\begin{tikzpicture}[inner sep=0,baseline=(text.base)]
+\node (text) {#2};
+\node[red,overlay] (label) at (#3) {\sffamily #4};
+\draw[->,thick,red,overlay] #1;
+\end{tikzpicture}}
+
+\begin{document}
+
+\maketitle
+
+\section{FFS in more detail}
+
+\begin{slide}{Review:  FFS background}
+\itms{
+  \item 1980s improvement to original Unix FS, which had:
+  \ittms{
+    \item 512-byte blocks
+    \item Free blocks in linked list
+    \item All inodes at beginning of disk
+    \item Low throughput:  512 bytes per average seek time
+  }
+  \item Unix FS performance problems:
+  \ittms{
+    \item Transfers only 512 bytes per disk access
+    \item Eventually random allocation $\to$ 512 bytes / disk seek
+    \item Inodes far from directory and file data
+    \item Within directory, inodes far from each other
+  }
+  \item Also had some usability problems:
+  \ittms{
+    \item 14-character file names a pain
+    \item Can't atomically update file in crash-proof way
+  }
+}
+\end{slide}
+
+
+\begin{slide}{Review:  FFS
+    \cref{sched/readings/ffs.pdf}{[McKusic]}
+        basics}
+\itms{
+  \item Change block size to at least 4K
+  \ittms{
+    \item To avoid wasting space, use ``fragments'' for ends of files
+  }
+  \item Cylinder groups spread inodes around disk
+  \item Bitmaps replace free list
+  \item FS reserves space to improve allocation
+  \ittms{
+    \item Tunable parameter, default 10\%
+    \item Only superuser can use space when over 90\% full
+  }
+  \item Usability improvements:
+  \ittms{
+    \item File names up to 255 characters
+    \item Atomic \emph{rename} system call
+    \item Symbolic links assign one file name to another
+  }
+}
+\end{slide}
+
+\begin{slide}{Review: FFS disk layout}
+\centerline{\input{ffs.tex}}
+\vspace*{.1in}
+\itms{
+  \item Each cylinder group has its own:
+  \ittms{
+    \item Superblock
+    \item Bookkeeping information
+    \item Set of inodes
+    \item Data/directory blocks
+  }
+}
+\end{slide}
+
+\begin{slide}{Superblock}
+\itms{
+  \item Contains file system parameters
+  \ittms{
+    \item Disk characteristics, block size, CG info
+    \item \Red{Information necessary to locate inode given i-number}
+  }
+  \item Replicated once per cylinder group
+  \ittms{
+    \item At shifting offsets, so as to span multiple platters
+    \item Contains magic number \texttt{0x011954} to find replicas if
+      1st superblock dies (Kirk McKusick's birthday?)
+  }
+  \item Contains non-replicated ``summary information''
+  \ittms{
+    \item \# blocks, fragments, inodes, directories in FS
+    \item Flag stating if FS was cleanly unmounted
+  }
+}
+\end{slide}
+
+\begin{frame}
+\frametitle{Bookkeeping information}
+\begin{itemize}
+  \item Block map
+  \begin{itemize}
+    \item Bit map of available fragments
+    \item Used for allocating new blocks/fragments
+  \end{itemize}
+  \item Summary info within CG
+  \begin{itemize}
+    \item \# free inodes, blocks/frags, files, directories 
+    \item Used when picking cylinder group from which to allocate
+  \end{itemize}
+  \item \# free blocks by rotational position (8 positions)
+  \begin{itemize}
+    \item Was reasonable in 1980s when disks weren't commonly zoned
+    \item Back then OS could do stuff to minimize rotational delay
+  \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{slide}{Inodes and data blocks}
+\centerline{\input{inode.tex}}
+\vspace*{-3mm}
+\itms{
+  \item Each CG has fixed \# of inodes (default one per 2K data)
+  \item Each inode maps \alert{offset $\to$ disk block} for one file
+  \item An inode also contains metadata for its file
+  \begin{itemize}
+    \item permissions, access/modification/change times, link
+      count, \ldots
+  \end{itemize}
+%  \item By convention, inode \#2 always root directory
+}
+\end{slide}
+
+%% \begin{slide}{Cylinder groups}
+%% \itms{
+%%   \item Groups related inodes and their data
+%%   \item Contains fixed number of inodes (set when FS created)
+%%   \ittms{
+%%     \item Default one inode per 2K data
+%%   }
+%%   \item Contains file and directory blocks
+%%   \item Contains bookkeeping information
+%% }
+%% \end{slide}
+
+\begin{slide}{Inode allocation}
+\itms{
+  \item Each file or directory created requires a new inode
+  \item New file?  Put inode in same CG as directory if possible
+  \item New directory?  Use different CG from parent
+  \ittms{
+    \item Consider CGs with greater than average \# free inodes
+    \item Chose CG with smallest \# directories
+  }
+  \item Within CG, inodes allocated randomly (next free)
+  \ittms{
+    \item Would like related inodes as close as possible
+    \item OK, because one CG doesn't have that many inodes
+    \item All inodes in CG can be read and cached with small \# of reads
+  }
+}
+\end{slide}
+
+\begin{slide}{Fragment allocation}
+\itms{
+  \item Allocate space when user writes beyond end of file
+  \item Want last block to be a fragment if not full-size
+  \ittms{
+    \item If already a fragment, may contain space for write -- done
+    \item Else, must deallocate any existing fragment, allocate new
+  }
+  \item If no appropriate free fragments, break full block
+  \item Problem:  Slow for many small writes
+  \begin{itemize}
+    \item May have to keep moving end of file around
+  \end{itemize}
+  \item (Partial) soution:  new \texttt{stat} struct field \texttt{st\_blksize}
+  \ittms{
+    \item Tells applications file system block size
+    \item stdio library can buffer this much data
+  }
+}
+\end{slide}
+
+\begin{slide}{Block allocation}
+\itms{
+  \item Try to optimize for sequential access
+  \ittms{
+    \item If available, use rotationally close block in same
+	    cylinder (obsolete)
+    \item Otherwise, use block in same CG
+    \item If CG totally full, find other CG with quadratic hashing \\
+      i.e., if CG \#$n$ is full, try $n+1^2, n+2^2,
+      n+3^2,\ldots \pmod{\# CGs}$
+    \item Otherwise, search all CGs for some free space
+  }
+  \item Problem:  Don't want one file filling up whole CG
+  \ittms{
+    \item Otherwise other inodes will have data far away
+  }
+  \item Solution:  Break big files over many CGs
+  \ittms{
+    \item But large extents in each CGs, so sequential access
+	doesn't require many seeks
+    \item How big should extents be?
+\pause
+    \item Extent transfer time should be much greater than seek time
+  }
+}
+\end{slide}
+
+\begin{slide}{Directories}
+\itms{
+  \item Inodes like files, but with different type bits
+  \item Contents considered as 512-byte \textit{chunks}
+  \item Each chunk has \texttt{direct} structure(s) with:
+  \ittms{
+    \item 32-bit inumber
+    \item 16-bit size of directory entry
+    \item 8-bit file type (added later)
+    \item 8-bit length of file name
+  }
+  \item Coalesce when deleting
+  \ittms{
+    \item If first \texttt{direct} in chunk deleted, set inumber = 0
+  }
+  \item Periodically compact directory chunks
+  \begin{itemize}
+    \item But can never move directory entries across chunks
+    \item Recall only 512-byte sector writes atomic w.\ power failure
+  \end{itemize}
+}
+\end{slide}
+
+\begin{slide}{Updating FFS for the 90s}
+\itms{
+  \item No longer wanted to assume rotational delay
+  \ittms{
+    \item With disk caches, want data contiguously allocated
+  }
+  \item Solution:  Cluster writes
+  \ittms{
+    \item FS delays writing a block back to get more blocks
+    \item Accumulates blocks into 64K clusters, written at once
+  }
+  \item Allocation of clusters similar to fragments/blocks
+  \ittms{
+    \item Summary info
+    \item Cluster map has one bit for each 64K if all free
+  }
+  \item Also read in 64K chunks when doing read ahead
+}
+\end{slide}
+
+\section{Crash recoverability}
+
+\begin{slide}{Fixing corruption -- fsck}
+\itms{
+  \item Must run FS check (fsck) program after crash
+  \item Summary info usually bad after crash
+  \ittms{
+    \item Scan to check free block map, block/inode counts
+  }
+  \item System may have corrupt inodes (not simple crash)
+  \ittms{
+    \item Bad block numbers, cross-allocation, etc.
+    \item Do sanity check, clear inodes with garbage
+  }
+  \item Fields in inodes may be wrong
+  \ittms{
+    \item Count number of directory entries to verify link count,
+	  if no entries but count $\ne$ 0, move to \texttt{lost+found}
+    \item Make sure size and used data counts match blocks
+  }
+  \item Directories may be bad
+  \ittms{
+    \item Holes illegal, \texttt{.} and \texttt{..} must be valid,
+      file names must be unique
+    \item All directories must be reachable
+  }
+}
+\end{slide}
+
+\begin{slide}{Crash recovery permeates FS code}
+\itms{
+  \item \Red{Have to ensure fsck can recover file system}
+  \item Example: Suppose all data written asynchronously
+  \begin{itemize}
+    \item Any subset of data structures may be updated before a crash
+  \end{itemize}
+  \item Delete/truncate a file, append to other file, crash
+  \ittms{
+    \item New file may reuse block from old
+    \item Old inode may not be updated
+    \item Cross-allocation!
+    \item Often inode with older mtime wrong, but can't be sure
+  }
+  \item Append to file, allocate indirect block, crash
+  \ittms{
+    \item Inode points to indirect block
+    \item But indirect block may contain garbage!
+  }
+}
+\end{slide}
+
+\begin{slide}{Ordering of updates}
+\itms{
+  \item Must be careful about order of updates
+  \ittms{
+    \item Write new inode to disk before directory entry
+    \item Remove directory name before deallocating inode
+    \item Write cleared inode to disk before updating CG free map
+%    \item Don't reuse on-disk struct before nullifying pointers to it
+%   \item Don't create persistent pointers to uninitialized structs
+  }
+  \item Solution:  Many metadata updates synchronous
+  \ittms{
+    \item Doing one write at a time ensures ordering
+    \item Of course, this hurts performance
+    \item E.g., untar much slower than disk bandwidth
+  }
+  \item Note:  \Red{Cannot update buffers on the disk queue}
+  \ittms{
+    \item E.g., say you make two updates to same directory block
+    \item But crash recovery requires first to be synchronous
+    \item Must wait for first write to complete before doing second
+  }
+}
+\end{slide}
+
+\begin{slide}{Performance vs.\ consistency}
+\itms{
+  \item FFS crash recoverability comes at \emph{huge} cost
+  \ittms{
+    \item Makes tasks such as untar easily 10-20 times slower
+    \item All because you \emph{might} lose power or reboot at any time
+  }
+  \item Even while slowing ordinary usage, recovery slow
+  \ittms{
+    \item If fsck takes one minute, then disks get 10$\times$ bigger \ldots
+  }
+  \item One solution:  battery-backed RAM
+  \ittms{
+    \item Expensive (requires specialized hardware)
+    \item Often don't learn battery has died until too late
+    \item A pain if computer dies (can't just move disk)
+    \item If OS bug causes crash, RAM might be garbage
+  }
+  \item Better solution:  Advanced file system techniques
+  \ittms{
+    \item Topic of rest of lecture
+  }
+}
+\end{slide}
+
+\section{Soft updates}
+
+\begin{slide}{First attempt:  Ordered updates}
+\itms{
+  \item Want to avoid crashing after ``bad'' subset of writes \\
+  \item Must follow 3 rules in ordering updates
+    \cref{sched/readings/softupdates.pdf}{[Ganger]}:
+  \ittms{
+    \item[1.] Never write pointer before initializing the structure it
+    points to 
+    \item[2.] Never reuse a resource before nullifying all pointers to it
+    \item[3.] Never clear last pointer to live resource before setting new one
+  }
+  \item If you do this, file system will be recoverable
+  \item Moreover, can recover quickly
+  \ittms{
+    \item Might leak free disk space, but otherwise correct
+    \item So start running after reboot, scavenge for space in background
+  }
+  \item How to achieve?
+  \ittms{
+    \item Keep a partial order on buffered blocks
+  }
+}
+\end{slide}
+
+\begin{slide}{Ordered updates (continued)}
+\itms{ 
+  \item Example:  Create file $A$
+  \ittms{
+    \item Block $X$ contains an inode
+    \item Block $Y$ contains a directory block
+    \item Create file $A$ in inode block $X$, dir block $Y$
+  }
+  \item We say \Red{$Y\to X$}, pronounced ``$Y$ \emph{depends on} $X$''
+  \ittms{
+    \item Means $Y$ cannot be written before $X$ is written
+    \item $X$ is called the \Red{depend\emph{ee}}, $Y$ the
+      \Red{depend\emph{er}}
+  }
+  \item Can delay both writes, so long as order preserved
+  \ittms{
+    \item Say you create a second file $B$ in blocks $X$ and $Y$
+    \item Only have to write each out once for both creates
+  }
+}
+\end{slide}
+
+\begin{slide}{Problem:  Cyclic dependencies}
+\itms{
+  \item Suppose you create file $A$, unlink file $B$
+  \ittms{
+    \item Both files in same directory block \& inode block
+  }
+  \item Can't write directory until $A$'s inode initialized
+  \ittms{
+    \item Otherwise, after crash directory will point to bogus inode
+    \item Worse yet, same inode \# might be re-allocated
+    \item So could end up with file name $A$ being an unrelated file
+  }
+  \item Can't write inode block until $B$'s directory entry cleared
+  \ittms{
+    \item Otherwise, $B$ could end up with too small a link count
+    \item File could be deleted while links to it still exist
+  }
+  \item Otherwise, fsck has to be slow
+  \ittms{
+    \item Check every directory entry and inode link count
+  }
+}
+\end{slide}
+
+\tikzset{
+    box/.style={draw, minimum width=2cm, text height=1.75ex, text
+        depth=.25ex,fill=white},
+    free/.style={fill=green!30},
+    dirty/.style={text=red,font=\sffamily\bfseries},
+    topdownboxes/.style={start chain=going below, node distance=0pt,
+                   every node/.append style={on chain,box,outer sep=0pt}}
+}
+
+\begin{frame}
+\frametitle{Cyclic dependencies illustrated}
+\begin{tikzpicture}[font=\normalfont\normalsize\sffamily]
+\path[topdownboxes]
+   node[draw=none] {inode block}
+   node[free] {inode \#4}
+   node       {inode \#5}
+   node[free] {inode \#6}
+   node       {inode \#7};
+\path[topdownboxes] (3,0)
+   node[draw=none] {directory block}
+   node[free] {$\langle$--,\#0$\rangle$}
+   node       {$\langle$B,\#5$\rangle$}
+   node       {$\langle$C,\#7$\rangle$};
+\node at (1.5,-3.25) {Original organization};
+
+\path[rounded corners,fill=yellow!20,thick,draw=yellow,blur shadow]
+(5,0) rectangle (10.5,-2.25);
+
+\path[topdownboxes, node distance=2mm]
+   (6.5,-.75) node {in use} node[free] {free};
+\path[topdownboxes, node distance=2mm]
+   (9, -.75) node {original} node[dirty] {modified};
+\draw[very thick,dashed] (7.75,-.25) -- (7.75,-2);
+
+\tikzset{yshift=-4cm}
+
+\path[topdownboxes] (0,0)
+   node[draw=none] {inode block}
+   node[dirty,name=i4b] {inode \#4}
+   node       {inode \#5}
+   node[free] {inode \#6}
+   node       {inode \#7};
+\path[topdownboxes] (3,0)
+   node[draw=none] {directory block}
+   node[dirty] {$\langle$A,\#4$\rangle$} edge[very thick,->] (i4b)
+   node       {$\langle$B,\#5$\rangle$}
+   node       {$\langle$C,\#7$\rangle$};
+\node at (1.5,-3.25) {Create file A};
+
+\path[topdownboxes] (6,0)
+   node[draw=none] {inode block}
+   node[dirty,name=i4c] {inode \#4}
+   node[dirty,free,name=i5c] {inode \#5}
+   node[free] {inode \#6}
+   node       {inode \#7};
+\path[topdownboxes] (9,0)
+   node[draw=none] {directory block}
+   node[dirty] {$\langle$A,\#4$\rangle$} edge[very thick,->] (i4c)
+   node[dirty,free] {$\langle$--,\#5$\rangle$} edge[very thick,<-] (i5c)
+   node       {$\langle$C,\#7$\rangle$};
+\node at (7.5,-3.25) {Remove file B};
+\end{tikzpicture}
+\end{frame}
+
+\begin{slide}{More problems}
+\itms{
+  \item Crash might occur between ordered but related writes
+  \ittms{
+    \item E.g., summary information wrong after block freed
+  }
+  \item Block aging
+  \ittms{
+    \item Block that always has dependency will never get written back
+  }
+  \item Solution:  \emph{Soft updates}
+    \cref{sched/readings/softupdates.pdf}{[Ganger]}
+  \ittms{
+    \item Write blocks in any order
+    \item But keep track of dependencies
+    \item When writing a block, temporarily roll back any changes 
+	  you can't yet commit to disk
+    \item I.e., can't write block with any arrows pointing to
+      dependees \\
+      \ldots but can temporarily undo whatever change requires the
+      arrow
+  }
+}
+\end{slide}
+
+\begin{frame}<1-4>
+\frametitle{Breaking dependencies with rollback}
+\begin{tikzpicture}[font=\normalfont\normalsize\sffamily]
+\node[font=\bfseries\Large] at (1.5,.75) {Buffer cache};
+\path[topdownboxes] (0,0)
+   node[draw=none] {inode block}
+   node[dirty,name=i4c] {inode \#4}
+   node[dirty,free,name=i5c] {inode \#5}
+   node[free] {inode \#6}
+   node       {inode \#7};
+\path[topdownboxes] (3,0)
+   node[draw=none] {directory block}
+   node[dirty] (d4c) {$\langle$A,\#4$\rangle$}
+   node[dirty,free] (d5c) {$\langle$--,\#0$\rangle$}
+   node       {$\langle$C,\#7$\rangle$};
+\only<1-2>{\draw[very thick,->] (d4c) -- (i4c);}
+\only<1>{\draw[very thick,<-] (d5c) -- (i5c);}
+\tikzset{xshift=6cm}
+\node[font=\bfseries\Large] at (1.5,.75) {Disk};
+\path[topdownboxes]
+   node[draw=none] {inode block}
+   node[only=<-2>{free},only=<3->{dirty}] {inode \#4}
+   node (diski5)      {inode \#5}
+   node[free] {inode \#6}
+   node       {inode \#7};
+\path[topdownboxes] (3,0)
+   node[draw=none] {directory block}
+   node[free] (diska) {$\langle$--,\#0$\rangle$}
+   node (diskb) {$\langle$B,\#5$\rangle$}
+   node       {$\langle$C,\#7$\rangle$};
+\only<2->{ \node[box,free,dirty] at (diskb.center) {$\langle$--,\#0$\rangle$}; }
+\only<3->{ \node[box,free,dirty] at (diski5.center) {inode \#5}; }
+\only<4->{ \node[box,dirty] at (diska.center) {$\langle$A,\#4$\rangle$}; }
+\end{tikzpicture}
+\bigskip
+\begin{overprint}
+\onslide<1>
+\itms{
+  \item Deleted Created file A and deleted file B
+  \item Now say we decide to write directory block\ldots
+  \item Can't write file name $A$ to disk---has dependee
+}
+\onslide<2>
+\itms{
+  \item Undo file $A$ before writing dir block to disk
+  \ittms{
+    \item Even though we just wrote it, directory block still dirty
+%      \rnode{todirty}{dirty}
+%\ncdiag[linecolor=blue,linewidth=.08,armA=1,linearc=.3,angleB=315,armB=.7,nodesep=.1]{->}{todirty}{dirty}
+  }
+  \item But now inode block has no dependees
+  \ittms{
+    \item Can safely write inode block to disk as-is\ldots
+  }
+}
+\onslide<3>
+\itms{
+  \item Now inode block clean (same in memory as on disk)
+  \item But have to write directory block a second time\ldots
+}
+\onslide<4>
+\itms{
+  \item All data stably on disk
+  \item Crash at any point would have been safe
+}
+\end{overprint}
+\end{frame}
+
+%% \begin{frame}
+%% \frametitle{Breaking dependencies w.\ rollback}
+%% \begin{overprint}
+%% \onslide<1>\centerline{\input{su1}}
+%% \itms{
+%%   \item Now say we decide to write directory block\ldots
+%%   \item Can't write file name $A$ to disk---has dependee
+%% }
+%% \onslide<2>\centerline{\input{su2}}
+%% \itms{
+%%   \item Undo file $A$ before writing dir block to disk
+%%   \ittms{
+%%     \item Even though we just wrote it, directory block still dirty
+%% %      \rnode{todirty}{dirty}
+%% %\ncdiag[linecolor=blue,linewidth=.08,armA=1,linearc=.3,angleB=315,armB=.7,nodesep=.1]{->}{todirty}{dirty}
+%%   }
+%%   \item But now inode block has no dependees
+%%   \ittms{
+%%     \item Can safely write inode block to disk as-is\ldots
+%%   }
+%% }
+%% \onslide<3>\centerline{\input{su3}}
+%% \itms{
+%%   \item Now inode block clean (same in memory as on disk)
+%%   \item But have to write directory block a second time\ldots
+%% }
+%% \onslide<4>\centerline{\input{su4}}
+%% \itms{
+%%   \item All data stably on disk
+%%   \item Crash at any point would have been safe
+%% }
+%% \end{overprint}
+%% \end{frame}
+
+\begin{slide}{Soft updates}
+\itms{
+  \item Structure for each updated field or pointer, contains:
+  \ittms{
+    \item old value
+    \item new value
+    \item list of updates on which this update depends (\emph{dependees})
+  }
+  \item Can write blocks in any order
+  \ittms{
+    \item But must temporarily undo updates with pending dependencies
+    \item Must lock rolled-back version so applications don't see it
+    \item Choose ordering based on disk arm scheduling
+  }
+  \item Some dependencies better handled by postponing in-memory updates
+  \ittms{
+    \item E.g., when freeing block (e.g., because file truncated),
+      just mark block free in bitmap after block pointer cleared on disk
+  }
+}
+\end{slide}
+
+\begin{slide}{\hypertarget{simple-example}{Simple example}}
+\itms{
+  \item Say you create a zero-length file $A$
+  \item Depender:  Directory entry for $A$
+  \ittms{
+    \item Can't be written untill dependees on disk
+  }
+  \item Dependees:
+  \ittms{
+    \item Inode -- must be initialized before dir entry written
+    \item Bitmap -- must mark inode allocated before dir entry written
+  }
+  \item Old value:  empty directory entry
+  \item New value:  $\langle \mathrm{filename}\ A, \mathrm{inode}\
+    \#\rangle$
+  \item Can write directory block to disk any time
+  \ittms{
+    \item Must substitute old value until inode \& bitmap updated on disk
+    \item Once dir block on disk contains $A$, file fully created
+    \item Crash before $A$ on disk, worst case might leak the inode
+  }
+}
+\end{slide}
+
+\begin{slide}{Operations requiring soft updates (1)}
+\itms{
+  \item[1.] Block allocation
+  \ittms{
+       \item Must write the disk block, the free map, \& a pointer
+       \item Disk block \& free map must be written before pointer
+       \item Use Undo/redo on pointer (\& possibly file size)
+  }
+  \item[2.] Block deallocation
+  \ittms{
+       \item Must write the cleared pointer \& free map
+       \item Just update free map after pointer written to disk
+       \item Or just immediately update free map if pointer not on disk 
+  }
+  \item Say you quickly append block to file then truncate
+  \ittms{
+    \item You will know pointer to block not written because of the
+	  allocated dependency structure
+    \item So both operations together require no disk I/O!
+  }
+}
+\end{slide}
+
+\begin{slide}{Operations requiring soft updates (2)}
+\itms{
+  \item[3.] Link addition (see \hyperlink{simple-example}{simple
+      example})
+  \ittms{
+       \item Must write the directory entry, inode, \& free map (if new inode)
+       \item Inode and free map must be written before dir entry
+       \item Use undo/redo on i\# in dir entry (ignore entries w.\ i\# 0)
+  }
+  \item[4.] Link removal
+  \ittms{
+       \item Must write directory entry, inode \& free map (if nlinks==0)
+       \item Must decrement nlinks only after pointer cleared
+       \item Clear directory entry immediately
+       \item Decrement in-memory nlinks once pointer written
+       \item If directory entry was never written, decrement
+  immediately \\
+         (again will know by presence of dependency structure)
+  }
+  \item Note:  Quick create/delete requires no disk I/O
+}
+\end{slide}
+
+\begin{slide}{Soft update issues}
+\itms{
+  \item \emph{fsync} -- sycall to flush file changes to disk
+  \ittms{
+    \item Must also flush directory entries, parent directories, etc.
+  }
+  \item \emph{unmount} -- flush all changes to disk on shutdown
+  \ittms{
+    \item Some buffers must be flushed multiple times to get clean
+  }
+  \item Deleting large directory trees frighteningly fast
+  \ittms{
+    \item \emph{unlink} syscall returns even if inode/indir block
+    not cached!
+    \item Dependencies allocated faster than blocks written
+    \item Cap \# dependencies allocated to avoid exhausting memory
+  }
+  \item Useless write-backs
+  \ittms{
+    \item Syncer flushes dirty buffers to disk every 30 seconds
+    \item Writing all at once means many dependencies unsatisfied
+    \item Fix syncer to write blocks one at a time
+    \item Fix LRU buffer eviction to know about dependencies
+  }
+}
+\end{slide}
+
+\begin{slide}{Soft updates fsck}
+\itms{
+ \item Split into foreground and background parts
+ \item Foreground must be done before remounting FS
+ \ittms{
+        \item Need to make sure per-cylinder summary info makes sense
+	\item Recompute free block/inode counts from bitmaps -- very fast
+	\item Will leave FS consistent, but might leak disk space
+  }
+  \item Background does traditional fsck operations
+  \ittms{
+      \item  Do after mounting to recuperate free space
+      \item  Can be using the file system while this is happening
+      \item  Must be done in forground after a media failure
+  }
+  \item Difference from traditional FFS fsck:
+  \ittms{
+           \item May have many, many inodes with non-zero link counts
+           \item Don't stick them all in lost+found (unless media failure)
+  }
+}
+\end{slide}
+
+\section{Journaling}
+
+\begin{slide}{An alternative: Journaling}
+%\vspace*{-.15in}
+\itms{
+  \item Biggest crash-recovery challenge is inconsistency
+  \ittms{
+    \item Have one logical operation (e.g., create or delete file)
+    \item Requires multiple separate disk writes
+    \item If only some of them happen, end up with big problems
+  }
+  \item Most of these problematic writes are to metadata
+  \item Idea:  Use a \emph{write-ahead} log to \emph{journal}
+    metadata
+  \ittms{
+    \item Reserve a portion of disk for a log
+    \item Write any metadata operation first to log, then to disk
+    \item After crash/reboot, re-play the log (efficient)
+    \item May re-do already committed change, but won't miss anything
+  }
+} 
+\end{slide}
+
+\begin{slide}{Journaling (continued)}
+\itms{
+  \item Group multiple operations into one log entry
+  \ittms{
+    \item E.g., clear directory entry, clear inode, update free
+      map---\\ either all three will happen after recovery, or none
+  }
+  \item Performance advantage:
+  \ittms{
+    \item Log is consecutive portion of disk
+    \item Multiple operations can be logged at disk b/w
+    \item Safe to consider updates committed when written to log
+  }
+  \item Example:  delete directory tree
+  \ittms{
+    \item Record all freed blocks, changed directory entries in log
+    \item Return control to user
+    \item Write out changed directories, bitmaps, etc.\ in background
+      \\ (sort for good disk arm scheduling)
+  }
+}
+\end{slide}
+
+\begin{slide}{Journaling details}
+\itms{
+  \item Must find oldest relevant log entry
+  \ittms{
+    \item Otherwise, redundant and slow to replay whole log
+  }
+  \item Use checkpoints
+  \ittms{
+    \item Once all records up to log entry $N$ have been processed and
+	  affected blocks stably committed to disk\ldots
+    \item Record $N$ to disk either in reserved checkpoint location, or
+    in checkpoint log record
+    \item Never need to go back before most recent checkpointed $N$
+  }
+  \item Must also find end of log
+  \ittms{
+    \item Typically circular buffer; don't play old records out of order
+    \item Can include begin transaction/end transaction records
+    \item Also typically have checksum in case some sectors bad
+  }
+}
+\end{slide}
+
+\begin{slide}{Case study: XFS
+    \cref{sched/readings/xfs.pdf}{[Sweeney]}}
+\itms{
+  \item Main idea:  Think big
+  \ittms{
+    \item Big disks, files, large \# of files, 64-bit everything
+    \item Yet maintain very good performance
+  }
+  \item Break disk up into \emph{Allocation Groups} (AGs)
+  \ittms{
+    \item 0.5 -- 4 GB regions of disk
+    \item New directories go in new AGs
+    \item Within directory, inodes of files go in same AG
+    \item Unlike cylinder groups, AGs too large to minimize seek times 
+    \item Unlike cylinder groups, no fixed \# of inodes per AG
+  }
+  \item Advantages of AGs:
+  \ittms{
+    \item Parallelize allocation of blocks/inodes on multiprocessor \\
+(independent locking of different free space structures)
+    \item Can use 32-bit block pointers within AGs \\
+(keeps data structures smaller)
+  }
+}
+\end{slide}
+
+\begin{slide}{B+-trees}   
+\centerline{\input{btree.tex}}
+\itms{
+  \item XFS makes extensive use of B+-trees
+  \ittms{
+    \item Indexed data structure stores ordered Keys \& Values
+    \item Keys must have an ordering defined on them
+    \item Stored data in blocks for efficient disk access
+  }
+  \item For B+-tree with $n$ items, all operations $O(\log n)$:
+  \ittms{
+    \item Retrieve closest $\langle$key, value$\rangle$ to target key $k$
+    \item Insert a new $\langle$key, value$\rangle$ pair
+    \item Delete $\langle$key, value$\rangle$ pair
+  }
+}
+\end{slide}
+
+\begin{slide}{B+-trees continued}
+\itms{
+  \item See any algorithms book for details (e.g., [Cormen])
+  \item Some operations on B-tree are complex:
+  \ittms{
+    \item E.g., insert item into completely full B+-tree
+    \item May require ``splitting'' nodes, adding new level to tree
+    \item Would be bad to crash \& leave B+tree in inconsistent state
+  }
+  \item Journal enables atomic complex operations
+  \ittms{
+    \item First write all changes to the log
+    \item If crash while writing log, incomplete log record will be
+	  discarded, and no change made
+    \item Otherwise, if crash while updating B+-tree, will replay
+	  entire log record and write everything
+  }
+}
+\end{slide}
+
+\begin{slide}{B+-trees in XFS}
+\itms{
+  \item B+-trees are complex to implement
+  \ittms{
+    \item But once you've done it, might as well use everywhere
+  }
+  \item Use B+-trees for directories (keyed on filename hash)
+  \ittms{
+    \item Makes large directories efficient
+  }
+  \item Use B+-trees for inodes
+  \ittms{
+    \item No more FFS-style fixed block pointers
+    \item Instead, B+-tree maps:  file offset $\to$ $\langle$start
+	  block, \# blocks$\rangle$ 
+    \item Ideally file is one or small number of contiguous extents
+    \item Allows small inodes \& no indirect blocks even for huge files
+  }
+  \item Use to find inode based on inumber
+  \ittms{
+    \item High bits of inumber specify AG
+    \item B+-tree in AG maps:  starting i\# $\to$ $\langle$block \#,
+      free-map$\rangle$
+    \item So free inodes tracked right in leaf of B+-tree
+  }
+}
+\end{slide}
+
+\begin{slide}{More B+-trees in XFS}
+\itms{
+  \item Free extents tracked by \emph{two} B+-trees
+  \ittms{
+    \item[1.] start block \# $\to$ \# free blocks
+    \item[2.] \# free blocks $\to$ start block \#
+  }
+  \item Use journal to update both atomically \& consistently
+  \item \#1 allows you to coalesce adjacent free regions
+  \item \#1 allows you to allocate near some target
+  \ittms{
+    \item E.g., when extending file, put next block near previous one
+    \item When first writing to file, but data near inode
+  }
+  \item \#2 allows you to do best fit allocation
+  \ittms{
+    \item Leave large free extents for large files
+  }
+}
+\end{slide}
+
+\begin{slide}{Contiguous allocation}
+\itms{
+  \item Ideally want each file contiguous on disk
+  \ittms{
+    \item Sequential file I/O should be as fast as sequential disk I/O
+  }
+  \item But how do you know how large a file will be?
+  \item Idea:  \Red{delayed allocation}
+  \ittms{
+    \item \emph{write} syscall only affects the buffer cache
+    \item Allow write into buffers before deciding where to place on disk
+    \item Assign disk space only when buffers are flushed
+  }
+  \item Other advantages:
+  \ittms{
+    \item Short-lived files never need disk space allocated
+    \item \emph{mmap}ed files often written in random order in memory,
+  but will be written to disk mostly contiguously 
+    \item Write clustering:  find other nearby stuff to write to disk
+  }
+}
+\end{slide}
+
+\begin{slide}{Journaling vs.\ soft updates}
+\itms{
+  \item Both much better than FFS alone
+  \item Some limitations of soft updates
+  \ittms{
+    \item Very specific to FFS data structures (E.g., couldn't easily
+      add B-trees like XFS---even directory rename not quite right)
+    \item Metadata updates may proceed out of order (E.g., create $A$,
+      create $B$, crash---maybe only $B$ exists after reboot)
+    \item Still need slow background fsck to reclaim space
+  }
+  \item Some limitations of journaling
+  \ittms{
+    \item Disk write required for every metadata operation (whereas
+      create-then-delete might require no I/O with soft updates)
+    \item Possible contention for end of log on multi-processor
+    \item \emph{fsync} must sync other operations' metadata to log, too
+  }
+}
+\end{slide}
+
+\end{document}
