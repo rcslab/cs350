@@ -1,0 +1,98 @@
+\documentclass[letterpaper]{article}
+
+\usepackage[letterpaper, margin=1in, tmargin=1.5in]{geometry}
+\usepackage{fancyhdr}
+\usepackage{microtype}
+
+\usepackage{xcolor}
+\usepackage{listings}
+
+\definecolor{lightgrey}{rgb}{0.95,0.95,0.95}
+
+% VS2017 C++ color scheme
+\definecolor{clr-background}{RGB}{255,255,255}
+\definecolor{clr-text}{RGB}{0,0,0}
+\definecolor{clr-string}{RGB}{163,21,21}
+\definecolor{clr-namespace}{RGB}{0,0,0}
+\definecolor{clr-preprocessor}{RGB}{128,128,128}
+\definecolor{clr-keyword}{RGB}{0,0,255}
+\definecolor{clr-type}{RGB}{43,145,175}
+\definecolor{clr-variable}{RGB}{0,0,0}
+\definecolor{clr-constant}{RGB}{111,0,138} % macro color
+\definecolor{clr-comment}{RGB}{0,128,0}
+
+\lstdefinestyle{CStyle}{
+    language=C,
+    % VS colors
+    backgroundcolor=\color{clr-background},
+    basicstyle=\ttfamily\color{clr-text},
+    stringstyle=\color{clr-string},
+    identifierstyle=\color{clr-variable},
+    commentstyle=\color{clr-comment},
+    directivestyle=\color{clr-preprocessor},
+    keywordstyle=\color{clr-type},
+    keywordstyle={[2]\color{clr-constant}},
+    %frame=tb,
+    captionpos=b,
+    columns=fullflexible,
+    %backgroundcolor=\color{lightgrey},
+    showstringspaces=false,
+    keepspaces=true,
+    tabsize=8,
+    numbers=left,
+    numbersep=5pt,
+    linewidth=0.7\textwidth
+}
+
+\lstset{style=CStyle}
+
+\begin{document}
+
+\pagestyle{fancy}
+\fancyhead[L]{\bf CS350: Operating Systems}
+\fancyhead[R]{\bf Concurrency}
+\fancyfoot[C]{\thepage}
+
+\begin{lstlisting}[style=CStyle]
+typedef struct Account {
+    pthread_mutex_t lock;
+    int balance;
+} Account;
+
+void
+deposit(Account *a, int amount) {
+    pthread_mutex_lock(a->lock);
+    a->balance += amount;
+    pthread_mutex_unlock(a->lock);
+}
+
+/* Atomically tranfer money between accounts */
+void
+transfer(Account *from, Account *to, int amount) {
+    pthread_mutex_lock(from->lock);
+    pthread_mutex_lock(to->lock);
+
+    from->balance -= amount;
+    to->balance += amount;
+
+    pthread_mutex_unlock(to->lock);
+    pthread_mutex_unlock(from->lock);
+}
+\end{lstlisting}
+
+\vspace{5em}
+
+\noindent
+\textbf{Question 1.} Does the program have any data races?  If it exists 
+explain the data race and fix the function(s).
+
+\vspace{8em}
+
+\noindent
+\textbf{Question 2.} Is there a possibility of a deadlock?  If it exists, 
+explain the deadlock and fix the function(s).
+
+\vspace{8em}
+
+\end{document}
+
