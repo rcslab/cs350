@@ -814,7 +814,7 @@ BOOL WINAPI CreateProcess(
   \ittms{
     \item Process Control Block (PCB)
     \item Called \texttt{proc} in Unix, \texttt{task\_struct} in
-      Linux, and just \texttt{struct thread} in OS/161
+      Linux, and \texttt{struct Process} in COS
   }
   \item Tracks \emph{state} of the process
   \ittms{
@@ -872,7 +872,7 @@ BOOL WINAPI CreateProcess(
 \ittms{
   \item Put threads on back of list, pull them from front \\
   \includegraphics[width=2.5in]{figs/proclist} \\
-  (OS/161 \texttt{kern/thread/thread.c})
+  (COS \texttt{sys/kern/sched.c})
 }
 \item Priority?
 \ittms{
@@ -1235,8 +1235,7 @@ ret                                    # Resume execution
   \item This is literally switch code from simple thread library
   \ittms{
     \item Nothing magic happens here
-  \item You will see very similar code in OS/161 
-	  \texttt{kern/arch/mips/switch.S}
+  \item You will see very similar code in COS \texttt{kern/amd64/switch.S}
   }
 }
 \end{frame}
