@@ -394,9 +394,9 @@ func main() {
 \end{ccode}
 \end{slide}
 
-\section{How to implement threads in OS/161}
+\section{How to implement threads in COS}
 
-\begin{slide}{Background: MIPS calling conventions}
+\begin{slide}{Background: AMD64/x86-64 calling conventions}
   \vspace{-1em}
   \begin{columns}
   \column{.65\textwidth}   
@@ -404,22 +404,25 @@ func main() {
     \item Registers divided into 2 groups
     \ittms{
       \item Functions free to clobber \Red{\emph{caller-saved}}
-        \rlap{regs} \\
-        (\texttt{\%t0}--\texttt{\%t9} on \rlap{MIPS)}
+	\rlap{regs} \\
+	(\texttt{\%r10}, \texttt{\%r11}, arguments and return registers)
       \item But must restore \Red{\emph{callee-saved}} ones to
-        original value upon return (\texttt{\%s0}--\texttt{\%s7}, \texttt{\%fp})
-    }
-    \item \texttt{\%sp} register always base of stack
+	  original value upon return (\texttt{\%rbx}, 
+	  \texttt{\%r12}--\texttt{\%r15})
+      }
+    \item \texttt{\%rsp} register always base of stack
     \ittms{
-      \item Frame pointer (\texttt{\%fp}) is old \texttt{\%sp}
+    \item Frame pointer (or base pointer) (\texttt{\%rbp}) is old 
+	\texttt{\%rsp}
     }
     \item Local variables stored in registers and on stack
     \item Function arguments go in caller-saved regs and on stack
     \ittms{
-      \item First four arguments in \texttt{\%a0}--\texttt{\%a3}
+    \item First six arguments in \texttt{\%rdi}, \texttt{\%rsi}, 
+	\texttt{\%rdx}, \texttt{\%rcx}, \texttt{\%r8}, \texttt{\%r9}
       \item Remaining arguments on stack
     }
-    \item Return value \texttt{\%v0} and \texttt{\%v1}
+    \item Return value \texttt{\%rax} and \texttt{\%rdx}
   }
   \column{.05\textwidth}
   \column{.3\textwidth}
@@ -495,35 +498,30 @@ func main() {
 }
 \end{slide}
 
-\begin{slide}{OS/161 Kernel Threads}
+\begin{slide}{COS: Thread Details}
   \itms{
-    \item OS/161 supports fork, exec, exit, and wait
-    \ittms{
-      \item You will implement these functions in Assignments 2a/2b
-    }
-    \item One thread per process
+    \item Supports both kernel and user threads
+    \item Basic Pthreads support see lib/libc/posix/pthread.c
   }
 
   \begin{ccode}
-  int thread_fork(const char *name,
-    struct proc *proc,
-    void (*entrypoint)(void *data1, unsigned long data2),
-    void *data1, unsigned long data2);
-  \end{ccode}
+/* Create a kernel thread associated with the process */
+Thread *Thread_KThreadCreate(void (*f)(void *), void *arg);
 
-  \itms{
-    \item OS/161 supports kernel threads (no user-level threading)
-    \item Create a kernel thread with: \texttt{thread\_fork()}
-    \item Bad nameing: Not \texttt{fork()} this is actually pthread\_create!
-  }
+/* Create a userspace thread (and associated kernel thread */
+Thread *Thread_UThreadCreate(Thread *oldThr, uint64_t rip, uint64_t arg);
+  \end{ccode}
 \end{slide}
 
 
-\begin{slide}{Switching Threads}
+\begin{slide}{COS: Switching Threads}
   \itms{
-    \item All thread switches go through \texttt{thread\_yield()} and \texttt{thread\_switch()}
-    \item \texttt{thread\_switch()} calls \texttt{switchframe\_switch} generates \texttt{switchframe}
-    \item \texttt{switchframe\_switch switches from one stack to other}
+    \item All thread switches go through \texttt{Sched\_Scheduler()} and 
+	\texttt{Sched\_Switch()}
+    \item \texttt{Sched\_switch()} calls \texttt{Thread\_SwitchArch} that runs 
+	\texttt{switchstack}
+    \item \texttt{switchstack} switches from one stack to other while saving 
+	and restoring registers
     \gap
   }
 
@@ -539,92 +537,68 @@ func main() {
 \begin{columns}
   \column{0.5\textwidth}
   \centering
-  \begin{drawstack}[every node/.style={scale=0.5},scale=0.5]
-    \cell{thread\_yield()}
-    \cell{thread\_switch()}
+    \begin{drawstack}[every node/.style={scale=0.5,font=\sffamily}, scale=0.5]
+	\cell{Sched\_Scheduler()}
+    \cell{Sched\_Switch()}
+    \cell{Thread\_SwitchArch()}
+    \cell{switchstack()}
     \cell{switchframe}
   \end{drawstack}
   \column{0.5\textwidth}
   \centering
-  \begin{drawstack}[every node/.style={scale=0.5},scale=0.5]
-    \cell{struct trapframe}
-    \cell{trap()}
-    \cell{interrupt handler}
-    \cell{thread\_yield()}
-    \cell{thread\_switch()}
+    \begin{drawstack}[every node/.style={scale=0.5,font=\sffamily},scale=0.5]
+    \cell{struct Trapframe}
+    \cell{trap\_entry()}
+    \cell{interrupt handler ...}
+    \cell{Thread\_SwitchArch()}
+    \cell{switchstack()}
     \cell{struct switchframe}
   \end{drawstack}
-\end{columns}  
-\end{slide}
-
-% \defverbatim[colored]\threadswitch{\small%
-% \begin{asm}
-% pushl %ebp; movl %esp,%ebp             # Save frame pointer
-% pushl %ebx; pushl %esi; pushl %edi     # Save callee-saved regs
-
-% movl 8(%ebp),%edx                      # %edx = thread_current
-% movl 12(%ebp),%eax                     # %eax = thread_next
-% movl %esp,(%edx)                       # %edx->md_esp = %esp
-% movl (%eax),%esp                       # %esp = %eax->md_esp
-
-% popl %edi; popl %esi; popl %ebx        # Restore callee saved regs
-% popl %ebp                              # Restore frame pointer
-% ret                                    # Resume execution
-% \end{asm}
-% }
-
-\begin{slide}{OS/161 switchframe\_switch -- save old thread}
-From OS/161 kern/arch/mips/thread/switch.S
-\begin{columns}
-\column{0.9\textwidth}
-\begin{smallccode}[numbers=left]
-switchframe_switch:
-  /* a0: switchframe pointer to old thread */
-  /* a1: switchframe pointer to new thread */
-  /* Allocate space for saving 10 registers. 10*4 = 40 */
-  addi sp, sp, -40
-
-  sw ra, 36(sp) /* Save callee save registers */
-  sw gp, 32(sp) /* Caller saved registers saved by thread_switch() */
-  sw s8, 28(sp)
-  sw s6, 24(sp)
-  sw s5, 20(sp)
-  sw s4, 16(sp)
-  sw s3, 12(sp)
-  sw s2, 8(sp)
-  sw s1, 4(sp)
-  sw s0, 0(sp)
-
-  /* Store the old stack pointer in the old thread */
-  sw sp, 0(a0)
-\end{smallccode}
 \end{columns}
 \end{slide}
 
-\begin{slide}{OS/161 switchframe\_switch -- restore new thread}
+\begin{slide}{COS: switchstack -- switch kernel threads}
+From COS kern/amd64/switch.S
+\begin{columns}
+\column{0.9\textwidth}
+\begin{asm}[numbers=left,firstnumber=9]
+# switch(uint64_t *oldsp, uint64_t newsp)
+# %rdi: oldsp
+# %rsi: newsp
+FUNC_BEGIN(switchstack)
+    # Save callee saved registers of old thread
+    pushq   %rbp
+    pushq   %rdi
+    pushq   %rbx
+    pushq   %r12
+    pushq   %r13
+    pushq   %r14
+    pushq   %r15
+
+    # Switch stack from old to new thread
+    movq    %rsp, (%rdi)
+    movq    %rsi, %rsp
+\end{asm}
+\end{columns}
+\end{slide}
+
+\begin{slide}{COS: switchstack -- switch kernel threads (con't)}
   \vspace{-1.7em}
   \begin{columns}
   \column{0.9\textwidth}
-  \begin{smallccode}[numbers=left]
-    /* Get the new stack pointer from the new thread */
-    lw sp, 0(a1)
-    nop /* Delay slot for load */
-  
-    lw s0, 0(sp) /* Now, restore callee saved registers */
-    lw s1, 4(sp) /* Caller saved registers restored by thread_switch() */
-    lw s2, 8(sp)
-    lw s3, 12(sp)
-    lw s4, 16(sp)
-    lw s5, 20(sp)
-    lw s6, 24(sp)
-    lw s8, 28(sp)
-    lw gp, 32(sp)
-    lw ra, 36(sp)
-    nop /* Delay slot for load */
-  
-    j ra /* jump register to return address. */
-    addi sp, sp, 40 /* Fix sp in delay slot for j */
-  \end{smallccode}
+  \begin{asm}[numbers=left, firstnumber=25]
+
+    # Restore callee saved registers of new thread
+    popq    %r15
+    popq    %r14
+    popq    %r13
+    popq    %r12
+    popq    %rbx
+    popq    %rdi
+    popq    %rbp
+    ret
+FUNC_END(switchstack)
+  \end{asm}
 \end{columns}
 \end{slide}
 
