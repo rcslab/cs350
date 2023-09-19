@@ -89,20 +89,20 @@ height=2em]
 
 \begin{slide}{POSIX thread API}
 \itms{
-  \item \texttt{int pthread\_create (pthread\_t *thr, pthread\_attr\_t *attr,\\
+  \item \texttt{int \man{pthread\_create}(pthread\_t *thr, pthread\_attr\_t *attr,\\
 				     \hspace{11em}void *(*fn)(void *), void *arg);}
   \ittms{
     \item Create a new thread identified by \texttt{thr} with optional attributes, run \texttt{fn} with \texttt{arg}
   }
-  \item \texttt{void pthread\_exit(void *return\_value);}
+  \item \texttt{void \man{pthread\_exit}(void *return\_value);}
   \ittms{
     \item Destroy current thread and return a pointer
   }
-  \item \texttt{int pthread\_join(pthread\_t thread, void **return\_value);}
+  \item \texttt{int \man{pthread\_join}(pthread\_t thread, void **return\_value);}
   \ittms{
     \item Wait for thread \texttt{thread} to exit and receive the return value
   }
-  \item \texttt{void pthread\_yield();}
+  \item \texttt{void \man{pthread\_yield}();}
   \ittms{
     \item Tell the OS scheduler to run another thread or process
   }
@@ -124,7 +124,8 @@ height=2em]
       stripped out
     \itttms{
       \item Keep same address space, file table, etc., in new process
-      \item \texttt{rfork}/\texttt{clone} syscalls actually allow individual control
+      \item \man{rfork}/\texttt{clone} syscalls actually allow individual 
+	  control
     }
   }
   \item Faster than a process, but still very heavy weight
@@ -166,13 +167,13 @@ height=2em]
 
 \begin{slide}{Implementing user-level threads}
 \itms{
-  \item Allocate a new stack for each \texttt{pthread\_create}
+  \item Allocate a new stack for each \man{pthread\_create}
   \item Keep a queue of runnable threads
   \item Replace blocking system calls (\texttt{read}/\texttt{write}/etc.)
   \ittms{
     \item If operation would block, switch and run different thread
   }
-  \item Schedule periodic timer signal (\texttt{setitimer})
+  \item Schedule periodic timer signal (\man{setitimer})
   \ittms{
     \item Switch to another thread on timer signals (preemption)
   }
@@ -360,7 +361,8 @@ height=2em]
   \item Convert blocking system calls (when possible):
   \ittms{
     \item Converted to non-blocking by in the runtime yielding the CPU to another core
-    \item Cores poll using kernel event API {\tt poll}, {\tt epoll}, or {\tt kqueue}
+    \item Cores poll using kernel event API \man{poll}, {\tt epoll}, or 
+	\man{kqueue}
   }
   \item Blocking system calls:
   \ittms{
@@ -503,14 +505,17 @@ func main() {
     \item Supports both kernel and user threads
     \item Basic Pthreads support see lib/libc/posix/pthread.c
   }
+  \gap
 
-  \begin{ccode}
+\begin{ccode}
 /* Create a kernel thread associated with the process */
 Thread *Thread_KThreadCreate(void (*f)(void *), void *arg);
 
 /* Create a userspace thread (and associated kernel thread */
-Thread *Thread_UThreadCreate(Thread *oldThr, uint64_t rip, uint64_t arg);
-  \end{ccode}
+Thread *Thread_UThreadCreate(Thread *oldThr,
+				       uint64_t rip,
+				       uint64_t arg);
+\end{ccode}
 \end{slide}
 
 

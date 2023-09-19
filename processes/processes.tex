@@ -338,14 +338,15 @@ height=2em]
 
 \begin{slide}{Creating processes}
 \itms{
-  \item \texttt{int fork (void);}
+  \item \texttt{int \man{fork}(void);}
   \ittms{
     \item Create new process that is exact copy of current one
     \item Returns \textit{process ID} of new process\ in ``parent''
     \item Returns 0 in ``child''
   }
-  \item \texttt{int waitpid (int pid, int *stat, int opt);}
+  \item \texttt{int \man{waitpid}(int pid, int *stat, int opt);}
   \ittms{
+    \item Wait for a child process to terminate
     \item \texttt{pid} -- process to wait for, or -1 for any
     \item \texttt{stat} -- will contain exit value, or signal
     \item \texttt{opt} -- usually 0 or \texttt{WNOHANG}
@@ -356,13 +357,13 @@ height=2em]
 
 \begin{slide}{Deleting processes}
 \itms{
-  \item \texttt{void exit (int status);}
+  \item \texttt{void \man{exit}(int status);}
   \ittms{
     \item Current process ceases to exist
     \item \texttt{status} shows up in \texttt{waitpid} (shifted)
     \item By convention, \texttt{status} of 0 is success, non-zero error
   }
-  \item \texttt{int kill (int pid, int sig);}
+  \item \texttt{int \man{kill}(int pid, int sig);}
   \ittms{
     \item Sends signal \texttt{sig} to process \texttt{pid}
     \item \texttt{SIGTERM} most common value, kills process by default \\
@@ -375,9 +376,10 @@ height=2em]
 \begin{slide}{Running programs}
 \vspace*{-.1in}
 \itms{
-  \item \texttt{int execve (char *prog, char **argv,
+  \item \texttt{int \man{execve}(char *prog, char **argv,
 	\hbox to0pt{char **envp);\hss}}
   \ittms{
+    \item Execute a new program
     \item \texttt{prog} -- full pathname of program to run
     \item \texttt{argv} -- argument vector that gets passed to \texttt{main}
     \item \texttt{envp} -- environment variables, e.g.,
@@ -640,18 +642,12 @@ main(int argc, const char *argv[])
 
 \begin{slide}{Manipulating file descriptors}
 \itms{
-  \item \texttt{int dup2 (int oldfd, int newfd);}
+  \item \texttt{int \man{dup2}(int oldfd, int newfd);}
   \ittms{
     \item Closes \texttt{newfd}, if it was a valid descriptor
     \item Makes \texttt{newfd} an exact copy of \texttt{oldfd}
     \item Two file descriptors will share same offset \\
 		(\texttt{lseek} on one will affect both)
-  }
-  \item \texttt{int fcntl (int fd, F\_SETFD, int val)}
-  \ittms{
-    \item Sets \textit{close on exec} flag if \texttt{val} = 1,
-	clears if \texttt{val} = 0
-    \item Sets file descriptor non-inheritable by new program
   }
   \item Example:  \texttt{redirsh.c}
   \ittms{
@@ -692,7 +688,7 @@ void doexec (void) {
 \begin{slide}{Pipes}
 \vspace*{-.1in}
 \itms{
-  \item \texttt{int pipe (int fds[2]);}
+  \item \texttt{int \man{pipe}(int fds[2]);}
   \ittms{
     \item Returns two file descriptors in \texttt{fds[0]}
 	and \texttt{fds[1]}
