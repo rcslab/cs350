@@ -74,6 +74,8 @@
 % }
 % \end{slide}
 
+\section{Critical Sections}
+
 \begin{slide}{Critical Sections}
 \begin{columns}
 \column{0.5\textwidth}
@@ -236,7 +238,7 @@ sw r9, 0(r8)
     \item Locks: prevent concurrent execution
 }
 \gap
-\item .. it gets worse!
+\item ... it gets worse!
 }
 \end{slide}
 
@@ -245,20 +247,20 @@ sw r9, 0(r8)
 \begin{ccode}
    int flag1 = 0, flag2 = 0;
 
-   void p1 (void *ignored) {
+   void p1(void *ignored) {
      flag1 = 1;
-     if (!flag2) { critical_section_1 (); }
+     if (!flag2) { critical_section_1(); }
    }
 
-   void p2 (void *ignored) {
+   void p2(void *ignored) {
      flag2 = 1;
-     if (!flag1) { critical_section_2 (); }
+     if (!flag1) { critical_section_2(); }
    }
 
-   int main () {
+   int main() {
      pthread_t tid;
-     pthread_create (tid, NULL, p1, NULL);
-     p2 (); pthread_join(tid);
+     pthread_create(tid, NULL, p1, NULL);
+     p2(); pthread_join(tid);
    }
 \end{ccode}
 \itms{
@@ -271,12 +273,12 @@ sw r9, 0(r8)
 \begin{ccode}
    int data = 0, ready = 0;
 
-   void p1 (void *ignored) {
+   void p1(void *ignored) {
      data = 2000;
      ready = 1;
    }
 
-   void p2 (void *ignored) {
+   void p2(void *ignored) {
      while (!ready)
        ;
      use(data);
@@ -291,16 +293,16 @@ sw r9, 0(r8)
 \begin{ccode}
    int a = 0, b = 0;
 
-   void p1 (void *ignored) {
+   void p1(void *ignored) {
      a = 1;
    }
 
-   void p2 (void *ignored) {
+   void p2(void *ignored) {
      if (a == 1)
        b = 1;
    }
 
-   void p3 (void *ignored) {
+   void p3(void *ignored) {
      if (b == 1)
        use(a);
    }
@@ -324,17 +326,19 @@ sw r9, 0(r8)
     \item But not all hardware provides sequential consistency
   }
   \item Note: Examples and other slide content from
-    \cref{sched/readings/shmem-tut.pdf}%
+    \cref{readings/shmem-tut.pdf}%
          {[Adve \& Gharachorloo]}
 }
 \end{slide}
+
+\section{CPU and Compiler Consistency}
 
 \begin{slide}{Sequential Consistency}
 \begin{block}{Sequential consistency}
 The result of execution is as if all operations were executed in some 
 	sequential order, and the operations of each processor occurred in the 
-	order specified by the program. 
-	\cref{sched/readings/sequential-consistency.pdf}{[Lamport]}
+	order specified by the program.  
+	\cref{readings/sequential-consistency.pdf}{[Lamport]}
 \end{block}
 \begin{itemize}
 \item Boils down to two requirements:
@@ -358,7 +362,7 @@ The result of execution is as if all operations were executed in some
 \itms{
   \item Complicates write buffers 
   \ittms{
-    \item E.g., read flag$n$ before flag$(2-n)$ written through
+    \item E.g., read flag$[n]$ before flag$[2-n]$ written through
       in \hyperlink{prog-a}{Program A}
   }
   \item Can't re-order overlapping write operations
@@ -640,6 +644,8 @@ The result of execution is as if all operations were executed in some
 }
 \end{slide}
 
+\section{Peterson's Algorithm}
+
 \begin{slide}{Peterson's solution}
 \itms{
   \item Still assuming sequential consistency
@@ -696,6 +702,8 @@ The result of execution is as if all operations were executed in some
   }
 }
 \end{slide}
+
+\section{Mutexes and Condition Variables}
 
 \begin{slide}{Mutexes}
 \itms{
@@ -1232,49 +1240,51 @@ void consumer (void *ignored) {
 % %%   }
 % %% }
 % %% \end{slide}
-% 
-% 
-% %% \begin{slide}{Monitors
-% %%     [BH]\cref{sched/readings/monitors.pdf}{[Hoar]}}
-% %% \itms{
-% %%   \item Programming language construct
-% %%   \ittms{
-% %%     \item Possibly less error prone than raw mutexes, but less flexible too
-% %%     \item Basically a class where only one procedure executes at a time
-% %%   }
-% %% }
-% %% \begin{ccode}
-% %%           monitor monitor-name
-% %%           {
-% %%             // shared variable declarations
-% %%             procedure P1 (...) { ... }
-% %%             ...
-% %%             procedure Pn (...) { ... }
-% 
-% %%             Initialization code (..) { ... }
-% %%           }      
-% %% \end{ccode}
-% %% \itms{
-% %%   \item Can implement mutex w.\ monitor or vice versa
-% %%   \ittms{
-% %%     \item But monitor alone doesn't give you condition variables
-% %%     \item Need some other way to interact w.\ scheduler
-% %%     \item Use \emph{conditions}, which are essentially condition variables
-% %%   }
-% %% }
-% %% \end{slide}
-% 
-% %% \begin{slide}{Monitor implementation}
-% %% \centerline{\includegraphics[height=2.2in]{figs/monitorcond}}
-% %% \medskip
-% %% \itms{
-% %%   \item Queue of threads waiting to get in
-% %%   \ittms{
-% %%     \item Might be protected by spinlock
-% %%   }
-% %%   \item Queues associated with conditions
-% %% }
-% %% \end{slide}
+
+\begin{slide}{Monitors
+    [BH]\cref{readings/monitors.pdf}{[Hoar]}}
+\itms{
+  \item Programming language construct (e.g. Java, C\#)
+  \ittms{
+    \item Possibly less error prone than raw mutexes, but less flexible too
+    \item A class where only one procedure executes at a time
+    \item Often provides CV like functionality
+  }
+}
+\begin{ccode}
+          monitor monitor-name
+          {
+            // shared variable declarations
+            procedure P1 (...) { ... }
+            ...
+            procedure Pn (...) { ... }
+
+            Initialization code (..) { ... }
+          }      
+\end{ccode}
+\itms{
+  \item Can implement mutex w.\ monitor or vice versa
+  \ittms{
+    \item But monitor alone doesn't give you condition variables
+    \item Need some other way to interact w.\ scheduler
+    \item Use \emph{conditions}, which are essentially condition variables
+  }
+}
+\end{slide}
+
+\begin{slide}{Monitor implementation}
+\centerline{\includegraphics[height=2.2in]{figs/monitorcond}}
+\medskip
+\itms{
+  \item Queue of threads waiting to get in
+  \ittms{
+    \item Might be protected by spinlock
+  }
+  \item Queues associated with conditions
+}
+\end{slide}
+
+\section{Semaphores}
 
 \begin{slide}{Semaphores
     \href{http://www.cs.utexas.edu/users/EWD/transcriptions/EWD01xx/EWD123.html}{[Dijkstra]}}
@@ -1345,7 +1355,8 @@ void consumer (void *ignored) {
 \end{smallccode}
 \end{frame}
 
-\end{document}
+\iffalse
+\section{Reader/Writer Locks}
 
 \begin{slide}{Readers-Writers Problem}
 \itms{
@@ -1409,10 +1420,9 @@ void ReleaseExclusive (sharedlk *sl) {
   \item Note:  Must deal with starvation
 }
 \end{slide}
+\fi
 
-\end{document}
-
-
+\section{Data Races}
 
 \begin{slide}{Benign races}
 \itms{
@@ -1439,7 +1449,8 @@ void ReleaseExclusive (sharedlk *sl) {
   \item Static methods (hard)
   \item Debugging painful---race might occur rarely
   \item Instrumentation---modify program to trap memory accesses
-  \item Lockset algorithm (eraser) particularly effective:
+  \item Lockset algorithm \cref{readings/eraser.pdf}{[eraser]} particularly 
+      effective:
   \ittms{
     \item For each global memory location, keep a ``lockset''
     \item On each access, remove any locks not currently held
@@ -1448,7 +1459,5 @@ void ReleaseExclusive (sharedlk *sl) {
   }
 }
 \end{slide}
-
-
 
 \end{document}
