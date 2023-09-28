@@ -1,0 +1,4 @@
+Lecture was way too long.
+
+Student got confused over the definition of preemptive and
+non-preemptive threads.
