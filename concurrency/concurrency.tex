@@ -27,52 +27,12 @@
   \gap
   \item POSIX Thread APIs
   \ittms{
-    \item \texttt{pthread\_create()} -- Create a new thread
-    \item \texttt{pthread\_exit()} -- Destroy the current thread
-    \item \texttt{pthread\_join()} -- Waits for a thread to exit
+    \item \man{pthread\_create}\texttt{()} -- Create a new thread
+    \item \man{pthread\_exit}\texttt{()} -- Destroy the current thread
+    \item \man{pthread\_join}\texttt{()} -- Waits for a thread to exit
   }
 }
 \end{slide}
-
-% \begin{slide}{Review: Thread package API}
-% \itms{
-%   \item \texttt{tid thread\_create(void (*fn) (void *), \rlap{void
-%           *arg);}}
-%   \ittms{
-%     \item Create a new thread that calls \texttt{fn} with \texttt{arg}
-%   }
-%   \item \texttt{void thread\_exit();}
-%   \item \texttt{void thread\_join(tid thread);}
-%   \item The execution of multiple threads is interleaved
-%   \item Can have \emph{\Red{non-preemptive} threads}:
-%   \ittms{
-%     \item One thread executes
-%       exclusively until it makes a blocking call
-%   }
-%   \item Or \emph{\Red{preemptive} threads}:
-%   \ittms{
-%     \item May switch to
-%       another thread between any two instructions.
-%   }
-%   \item Using multiple CPUs is inherently preemptive
-%   \ittms{
-%     \item Even if you don't take $CPU_0$ away from thread $T$, another
-%       thread on $CPU_1$ can execute between any two instructions of
-%       $T$
-%   }
-% %  \item Threads may run simultaneously
-% %  \ittms{
-% %    \item E.g., \texttt{create (p1, NULL); create (p2, NULL);}
-% %    \item \texttt{p1} and \texttt{p2} run interleaved or concurrently
-% %  }
-% %  \item Threads have same address space
-% %  \ittms{
-% %    \item Usually share some memory locations between threads
-% %    \item Otherwise, could just have used processes
-% %  }
-% %  \item Sharing + Concurrency can lead to unexpected results
-% }
-% \end{slide}
 
 \section{Critical Sections}
 
@@ -761,24 +721,24 @@ Assuming no data races the program behaves sequentially consistent.
 \begin{slide}{PThread Mutex API}
 \itms{
 \item Function names in this lecture all based on \emph{pthreads}
-\item \code{int pthread_mutex_init(pthread_mutex_t *m,} \\
+\item \code{int }\man{pthread\_mutex\_init}\code{(pthread_mutex_t *m,} \\
     \hspace{12.7em}\code{pthread_mutexattr_t attr)}
 \ittms{
     \item Initialize a mutex
 }
-\item \code{int pthread_mutex_destroy(pthread_mutex_t *m)}
+\item \code{int }\man{pthread\_mutex\_destroy}\code{(pthread_mutex_t *m)}
 \ittms{
     \item Destroy a mutex
 }
-\item \code{int pthread_mutex_lock(pthread_mutex_t *m)}
+\item \code{int }\man{pthread\_mutex\_lock}\code{(pthread_mutex_t *m)}
 \ittms{
     \item Acquire a mutex
 }
-\item \code{int pthread_mutex_unlock(pthread_mutex_t *m)}
+\item \code{int }\man{pthread\_mutex\_unlock}\code{(pthread_mutex_t *m)}
 \ittms{
     \item Release a mutex
 }
-\item \code{int pthread_mutex_trylock(pthread_mutex_t *m)}
+\item \code{int }\man{pthread\_mutex\_trylock}\code{(pthread_mutex_t *m)}
 \ittms{
     \item Attempt to acquire a mutex
     \item Return 0 if successful, otherwise -1 (\code{errno == EBUSY})
@@ -842,17 +802,18 @@ void consumer (void *ignored) {
   }
   \item Better to inform scheduler of which threads can run
   \item Typically done with \emph{condition variables}
-  \item \code{int pthread_cond_init(pthread_cond_t *, \ldots);}
+  \item \code{int }\man{pthread\_cond\_init}\code{(pthread_cond_t *, \ldots);}
   \ittms{
     \item Initialize with specific attributes
   }
-  \item \code{int pthread_cond_wait(pthread_cond_t *c, pthread_mutex_t *m);}
+  \item \code{int }\man{pthread\_cond\_wait}\code{(pthread_cond_t *c, 
+      pthread_mutex_t *m);}
   \ittms{
     \item Atomically unlock \texttt{m} and sleep until \texttt{c} signaled
     \item Then re-acquire \texttt{m} and resume executing
   }
-  \item \code{int pthread_cond_signal(pthread_cond_t *c);} \\
-	\code{int pthread_cond_broadcast(pthread_cond_t *c);}
+  \item \code{int }\man{pthread\_cond\_signal}\code{(pthread_cond_t *c);} \\
+      \code{int }\man{pthread\_cond\_broadcast}\code{(pthread_cond_t *c);}
   \ittms{
     \item Wake one/all threads waiting on \texttt{c}
   }
@@ -1241,8 +1202,7 @@ void consumer (void *ignored) {
 % %% }
 % %% \end{slide}
 
-\begin{slide}{Monitors
-    [BH]\cref{readings/monitors.pdf}{[Hoar]}}
+\begin{slide}{Monitors \cref{readings/monitors.pdf}{[Hoar]}}
 \itms{
   \item Programming language construct (e.g. Java, C\#)
   \ittms{
@@ -1251,17 +1211,13 @@ void consumer (void *ignored) {
     \item Often provides CV like functionality
   }
 }
-\begin{ccode}
-          monitor monitor-name
-          {
-            // shared variable declarations
-            procedure P1 (...) { ... }
-            ...
-            procedure Pn (...) { ... }
-
-            Initialization code (..) { ... }
-          }      
-\end{ccode}
+\begin{javacode}
+public class Statistics {
+    private int counter;
+    public synchronized int get() { return counter; }
+    public synchronized void inc() { counter++; }
+}
+\end{javacode}
 \itms{
   \item Can implement mutex w.\ monitor or vice versa
   \ittms{
@@ -1277,10 +1233,8 @@ void consumer (void *ignored) {
 \medskip
 \itms{
   \item Queue of threads waiting to get in
-  \ittms{
-    \item Might be protected by spinlock
-  }
-  \item Queues associated with conditions
+  \item Java provides \code{obj.wait()}, \code{obj.notify()} and 
+      \code{obj.notifyAll()}
 }
 \end{slide}
 
@@ -1290,7 +1244,7 @@ void consumer (void *ignored) {
     \href{http://www.cs.utexas.edu/users/EWD/transcriptions/EWD01xx/EWD123.html}{[Dijkstra]}}
 \vspace{-1.5em}
 \begin{columns}
-\column{0.7\textwidth}
+\column{0.9\textwidth}
 \itms{
   \item A \emph{Semaphore} is initialized with an integer $N$
   \ittms{
@@ -1298,16 +1252,15 @@ void consumer (void *ignored) {
   }
   \item Provides two functions:
   \ittms{
-    \item \code{sem_wait(sem_t *s)}\quad  (originally called $P$)
-    \item \code{sem_signal(sem_t *s)}\quad (\code{sem_post} in PThreads, 
-	originally called $V$)
+    \item \man{sem\_wait}\code{(sem_t *s)}\quad  (originally called $P$)
+    \item \man{sem\_post}\code{(sem_t *s)}\quad (originally called $V$)
   }
   \item Operation:
-    \texttt{sem\_wait} will return only $N$ more times than 
-    \texttt{sem\_signal} called
+    \texttt{sem\_wait} will return only $N$ more times than \texttt{sem\_post} 
+    called
   \ittms{
     \item Example: If $N==1$, then semaphore is a mutex with
-      \texttt{sem\_wait} as lock and \texttt{sem\_signal} as unlock
+      \texttt{sem\_wait} as lock and \texttt{sem\_post} as unlock
   }
   \item Semaphores give elegant solutions to some problems
   \item Linux primarily uses semaphores for sleeping locks
@@ -1333,23 +1286,23 @@ void consumer (void *ignored) {
   \item Initialize \texttt{full} to 0 (block consumer when buffer empty)
   \item Initialize \texttt{empty} to $N$ (block producer when queue full)
 }
-\begin{smallccode}[classoffset=2,morekeywords={sem_wait,sem_signal},keywordstyle=\color{red}]
-     void producer (void *ignored) {
+\begin{smallccode}[classoffset=2,morekeywords={sem_wait,sem_post},keywordstyle=\color{red}]
+     void producer(void *ignored) {
          for (;;) {
              item *nextProduced = produce_item ();
-             sem_wait (&empty);
+             sem_wait(&empty);
              buffer [in] = nextProduced;
              in = (in + 1) % BUFFER_SIZE;
-             sem_signal (&full);
+             sem_post(&full);
          }    
      }
-     void consumer (void *ignored) {
+     void consumer(void *ignored) {
          for (;;) {
-             sem_wait (&full);
+             sem_wait(&full);
              item *nextConsumed =  buffer[out];
              out = (out + 1) % BUFFER_SIZE;
-             sem_signal (&empty);
-             consume_item (nextConsumed);
+             sem_post(&empty);
+             consume_item(nextConsumed);
          }
      }       
 \end{smallccode}
@@ -1449,7 +1402,7 @@ void ReleaseExclusive (sharedlk *sl) {
   \item Static methods (hard)
   \item Debugging painful---race might occur rarely
   \item Instrumentation---modify program to trap memory accesses
-  \item Lockset algorithm \cref{readings/eraser.pdf}{[eraser]} particularly 
+  \item Lockset algorithm \cref{readings/eraser.pdf}{[Eraser]} particularly 
       effective:
   \ittms{
     \item For each global memory location, keep a ``lockset''
@@ -1457,6 +1410,7 @@ void ReleaseExclusive (sharedlk *sl) {
     \item If lockset becomes empty, abort:  No mutex protects data
     \item Catches potential races even if they don't occur
   }
+  \item Clang's ThreadSanitizer uses a happens before algorithm
 }
 \end{slide}
 

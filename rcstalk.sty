@@ -88,6 +88,19 @@
 	basicstyle=\small\ttfamily\openup-.17\baselineskip,#1}}%
     {}
 
+\lstdefinestyle{javacode}{
+  showstringspaces=false,
+  stringstyle={\ttfamily\color{string}},
+  language=Java,
+  escapeinside=`',
+  columns=flexible,
+  commentstyle=\color{comment},
+  basicstyle=\ttfamily
+}
+\lstnewenvironment{javacode}[1][]%
+    {\lstset{style=javacode,basicstyle=\ttfamily\openup-.17\baselineskip,#1}}%
+    {}
+
 \lstnewenvironment{asm}[1][]%
     {\lstset{language=[x64]Assembler,
             escapeinside=`',%
