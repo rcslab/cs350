@@ -9,7 +9,7 @@
 \usetikzlibrary{shapes,arrows,shadows,positioning,patterns,matrix,calc}
 \usepackage{pgf}
 
-\subtitle{Debugginng}
+\subtitle{Debugging}
 \topic{Debugging Traps and Pitfalls}
 
 \begin{document}
@@ -159,7 +159,8 @@ void foo(...) {
     \gap
     \item Avoid confusing APIs
     \ittms{
-    \item Example: strncpy vs. strlcpy
+    \item Example: \man{strncpy} vs. \man{strlcpy} and \man{strncat} vs.  
+	\man{strlcat}
     \item \code{strncpy} doesn't null terminate the string when the buffer is too small!
     }
 }
