@@ -30,7 +30,7 @@ $$ T(n) = T(1)\left(B + \frac{1}{n} (1 - B)\right) $$
   \gap
   \item Scalable Commutativity Rule: \emph{``Whenever interface operations 
       commute, they can be implemented in a way that scales''} 
-      \href{http://web.mit.edu/amdragon/www/pubs/commutativity-sosp13.pdf}{[Clements]}
+      \cref{readings/clements-sc.pdf}{[Clements]}
 }
 \end{slide}
 
@@ -239,86 +239,84 @@ read/write: & v->lock = 1;              & v->lock = 1;\cr
 \end{itemize}
 \end{frame}
 
-\begin{slide}{MIPS Spinlocks}
-\vspace{-1em}
-\itms{
-  \item \texttt{LL rt, offset(rb)} -- Load Linked
-  \ittms{
-    \item \code{rt} $\leftarrow$ \code{memory[rb+offset]}
-  }
-  \item \texttt{SC rt, offset(base)} -- Store conditional (sets rt 0 if not 
-      atomic)
-  \ittms{
-    \item if atomic w.r.t. prior LL \code{memory[rb+offset]} $\leftarrow$ 
-	\code{rt, rt} $\leftarrow$ \code{1}
-    \item else \code{rt} $\leftarrow$ \code{0}
-  }
-}
-\begin{mipsasm}
-# spinlock_data_t spinlock_data_testandset(spinlock_data_t *sd)
-    ll      v0, 0(a0)           # v0 = *sd (Load Linked)
-    addi    t1, zero, 1         # t1 = 1
-    sc      t1, 0(a0)           # *sd = t1 (Store Conditional)
-    bne     t1, zero, 1f        # if SC not failed
-    nop                         # branch delay slot
-    addi    v0, zero, 1         # return 1 on failure
-1:  j       ra                  # return to caller
-    nop                         # branch delay slot
-\end{mipsasm}
-\itms{
-  \item MIPS I (SYS/161) is sequentially consistent $\rightarrow$ no barriers 
-      needed
-  \item Later MIPS processors need \code{SYNC} memory barrier
-}
-\end{slide}
+% \begin{slide}{MIPS Spinlocks}
+% \vspace{-1em}
+% \itms{
+%   \item \texttt{LL rt, offset(rb)} -- Load Linked
+%   \ittms{
+%     \item \code{rt} $\leftarrow$ \code{memory[rb+offset]}
+%   }
+%   \item \texttt{SC rt, offset(base)} -- Store conditional (sets rt 0 if not 
+%       atomic)
+%   \ittms{
+%     \item if atomic w.r.t. prior LL \code{memory[rb+offset]} $\leftarrow$ 
+% 	\code{rt, rt} $\leftarrow$ \code{1}
+%     \item else \code{rt} $\leftarrow$ \code{0}
+%   }
+% }
+% \begin{mipsasm}
+% # spinlock_data_t spinlock_data_testandset(spinlock_data_t *sd)
+%     ll      v0, 0(a0)           # v0 = *sd (Load Linked)
+%     addi    t1, zero, 1         # t1 = 1
+%     sc      t1, 0(a0)           # *sd = t1 (Store Conditional)
+%     bne     t1, zero, 1f        # if SC not failed
+%     nop                         # branch delay slot
+%     addi    v0, zero, 1         # return 1 on failure
+% 1:  j       ra                  # return to caller
+%     nop                         # branch delay slot
+% \end{mipsasm}
+% \itms{
+%   \item MIPS I (SYS/161) is sequentially consistent $\rightarrow$ no barriers 
+%       needed
+%   \item Later MIPS processors need \code{SYNC} memory barrier
+% }
+% \end{slide}
 
-\begin{slide}{OS/161 Spinlock Acquire}
-\begin{smallccode}
-void spinlock_acquire(struct spinlock *lk)
-{
-  struct cpu *mycpu;
-  
-  splraise(IPL_NONE, IPL_HIGH);
-  
-  /* this must work before curcpu initialization */
-  if (CURCPU_EXISTS()) {
-    mycpu = curcpu->c_self;
-    if (lk->lk_holder == mycpu) {
-      panic("Deadlock on spinlock %p\n", lk);
-    }
-  } else {
-    mycpu = NULL;
-  }
-  ...
-}
-\end{smallccode}
-\end{slide}
-
-\begin{slide}{OS/161 Spinlock Acquire Con't}
-\begin{smallccode}
-void spinlock_acquire(struct spinlock *lk)
-{
-  ...
-  while (1) {
-    /*
-     * First check if the lock is busy to reduce
-     * coherence traffic (more on this later).
-     */
-    if (spinlock_data_get(&lk->lk_lock) != 0) {
-      continue;
-    }
-    /* Attempt to acquire the lock */
-    if (spinlock_data_testandset(&lk->lk_lock) != 0) {
-      continue;
-    }
-    break;
-  }
-  lk->lk_holder = mycpu;
-}
-\end{smallccode}
-\end{slide}
-
-\
+% \begin{slide}{OS/161 Spinlock Acquire}
+% \begin{smallccode}
+% void spinlock_acquire(struct spinlock *lk)
+% {
+%   struct cpu *mycpu;
+%   
+%   splraise(IPL_NONE, IPL_HIGH);
+%   
+%   /* this must work before curcpu initialization */
+%   if (CURCPU_EXISTS()) {
+%     mycpu = curcpu->c_self;
+%     if (lk->lk_holder == mycpu) {
+%       panic("Deadlock on spinlock %p\n", lk);
+%     }
+%   } else {
+%     mycpu = NULL;
+%   }
+%   ...
+% }
+% \end{smallccode}
+% \end{slide}
+% 
+% \begin{slide}{OS/161 Spinlock Acquire Con't}
+% \begin{smallccode}
+% void spinlock_acquire(struct spinlock *lk)
+% {
+%   ...
+%   while (1) {
+%     /*
+%      * First check if the lock is busy to reduce
+%      * coherence traffic (more on this later).
+%      */
+%     if (spinlock_data_get(&lk->lk_lock) != 0) {
+%       continue;
+%     }
+%     /* Attempt to acquire the lock */
+%     if (spinlock_data_testandset(&lk->lk_lock) != 0) {
+%       continue;
+%     }
+%     break;
+%   }
+%   lk->lk_holder = mycpu;
+% }
+% \end{smallccode}
+% \end{slide}
 
 % \begin{slide}{Correct spinlock on alpha}
 % \itms{
@@ -381,6 +379,31 @@ void spinlock_acquire(struct spinlock *lk)
 % }
 % \end{slide}
 
+\begin{slide}{Spinlocks}
+\vspace{-1em}
+\begin{ccode}
+void Spinlock_Lock(Spinlock *lock)
+{
+    /* Disable Interrupts */
+    Critical_Enter();
+
+    while (atomic_swap_uint64(&lock->lock, 1) == 1)
+	/* Spin! */;
+
+    lock->cpu = CPU();
+}
+void Spinlock_Unlock(Spinlock *lock)
+{
+    ASSERT(lock->cpu == CPU());
+
+    atomic_set_uint64(&lock->lock, 0);
+
+    /* Re-enable Interrupts (if not spinlocks held) */
+    Critical_Exit();
+}
+\end{ccode}
+\end{slide}
+
 \section{C11 Atomics}
 
 \begin{slide}{Atomics and Portability}
@@ -390,7 +413,7 @@ void spinlock_acquire(struct spinlock *lk)
   \item Still a big problem today: Your laptop is x86, your cell phone is ARM
   \ittms{
     \item x86: Total Store Order Consistency Model, CISC
-    \item arm: Relaxed Consistency Model, RISC
+    \item ARM: Relaxed Consistency Model, RISC
   }
   \item Fortunately, the new C11 standard has builtin support for atomics
   \ittms{
@@ -579,6 +602,11 @@ void spinlock_acquire(struct spinlock *lk)
     \item Writeback contents to memory if modified
     \item Discard if in shared state
   }
+  \item Performance problem:
+  \ittms{
+    \item Every transition requires bus communications
+    \item Avoid state transitions whenever possible
+  }
 }
 \end{slide}
 
@@ -636,55 +664,31 @@ void spinlock_acquire(struct spinlock *lk)
 %   \item Cray T3D has local/global memory
 % }}
 % \end{slide}
-% 
-% \begin{slide}{Real World Coherence Costs}
-% \itms{
-%   \item See
-%       \cref{sched/readings/david-synchronization.pdf}{[David]}
-%       for a great reference, summarized here...
-%   \ittms{
-%     \item Intel Xeon: 3 cycle L1, 11 cycle L2, 44 cycle LLC, 355 cycle RAM
-%   }
-%   \item Remote core holds modified line state:
-%   \ittms{
-%     \item load: 109 cycles (LLC $+$ 65)
-%     \item store: 115 cycles (LLC $+$ 71)
-%     \item atomic CAS: 120 cycles (LLC $+$ 76)
-%     \item NUMA load: 289 cycles
-%     \item NUMA store: 320 cycles
-%     \item NUMA atomic CAS: 324 cycles 
-%   }
-%   \item But only a partial picture
-%   \ittms{
-%     \item Could be faster because of out-of-order execution
-%     \item Could be slower because of bus contention or multiple hops
-%   }
-% }
-% \end{slide}
-
-% \begin{slide}{Improving Spinlocks}
-% \itms{
-%   \item Test-and-set spinlock has several advantages
-%   \ittms{
-%     \item Simple to implement and understand
-%     \item One memory location for arbitrarily many CPUs
-%   }
-%   \item But also has disadvantages
-%   \ittms{
-%     \item Lots of traffic over memory bus (especially when $>1$
-%       spinner)
-%     \item Not necessarily fair (same CPU acquires lock many times)
-%     \item Even less fair on a NUMA machine
-%     \item Allegedly Google had fairness problems even on Opterons
-%   }
-%   \item Idea 1: Avoid spinlocks altogether
-%   \item Idea 2: Reduce bus traffic with better spinlocks
-%   \ittms{
-%     \item Design lock that spins only on local memory
-%     \item Also gives better fairness
-%   }
-% }
-% \end{slide}
+ 
+\begin{slide}{Real World Coherence Costs}
+\itms{
+  \item See
+      \cref{readings/sync.pdf}{[David]}
+      for a great reference, summarized here...
+  \ittms{
+    \item Intel Xeon: 3 cycle L1, 11 cycle L2, 44 cycle LLC, 355 cycle RAM
+  }
+  \item Remote core holds modified line state:
+  \ittms{
+    \item load: 109 cycles (LLC $+$ 65)
+    \item store: 115 cycles (LLC $+$ 71)
+    \item atomic CAS: 120 cycles (LLC $+$ 76)
+    \item NUMA load: 289 cycles
+    \item NUMA store: 320 cycles
+    \item NUMA atomic CAS: 324 cycles 
+  }
+  \item But only a partial picture
+  \ittms{
+    \item Could be faster because of out-of-order execution
+    \item Could be slower because of bus contention or multiple hops
+  }
+}
+\end{slide}
 
 % \section{Avoiding locks}
 % 
@@ -937,121 +941,148 @@ void spinlock_acquire(struct spinlock *lk)
 % } 
 % \end{slide}
 
-%\section{Improving spinlock performance}
+\section{MCS Locks -- Improving spinlock performance}
 
-% \begin{slide}{MCS lock}
-% \itms{
-%   \item Idea 2: Build a better spinlock
-%   \item Lock designed by
-%     \href{http://www.cs.rice.edu/~johnmc/papers/tocs91.pdf}{Mellor-Crummey
-%         and Scott}
-%   \ittms{
-%     \item Goal:  reduce bus traffic on cc machines, improve fairness
-%   }
-%   \item Each CPU has a \texttt{qnode} structure in local memory
-% }
-% \begin{ccode}
-%          typedef struct qnode {
-%            struct qnode *next;
-%            bool locked;
-%          } qnode;
-% \end{ccode}
-% \itms{
-%   \item[]
-%   \ittms{
-%     \item Local can mean local memory in NUMA machine
-%     \item Or just its own cache line that gets cached in exclusive mode
-%   }
-%   \item A lock is just a pointer to a \texttt{qnode}
-% }
-% \begin{ccode}
-%       typedef qnode *lock;
-% \end{ccode}
-% \itms{
-%   \item Lock is list of CPUs holding or waiting for lock
-%   \item While waiting, spin on \emph{your local} \texttt{locked} flag
-% }
-% \end{slide}
-% 
-% \defverbatim[colored]\mcsacquire{
-% \begin{smallccode}
-%       acquire(lock *L, qnode *I) {
-%         I->next = NULL;
-%         qnode *predecessor = I;
-% 	XCHG(predecessor, *L); /* atomic swap */
-%         if (predecessor != NULL) {
-%           I->locked = true;
-%           predecessor->next = I;
-%           while (I->locked)
-%             ;
-%         }
-%       }
-% \end{smallccode}}
-% 
-% \begin{frame}
-% \frametitle{MCS Acquire}
-% \mcsacquire
-% \vspace*{-3mm}
-% \itms{
-%     \item If unlocked, \texttt{L} is \texttt{NULL}
-%     \item If locked, no waiters, \texttt{L} is owner's \texttt{qnode}
-%     \item If waiters, \texttt{*L} is tail of waiter list:
-% }
-% \smallskip
-% \vbox to 19mm{
-% \vss
-% \hspace*{3mm}\only<1>{\input{mcs}}%
-% \only<2>{\input{mcs1}}%
-% \only<3>{\input{mcs2}}%
-% \only<4>{\input{mcs3}}%
-% }
-% \end{frame}
-% 
-% 
-% \defverbatim[colored]\mcsrelease{
-% \begin{ccode}
-%       release(lock *L, qnode *I) {
-%         if (!I->next)
-% 	  if (CAS(*L, I, NULL))
-%             return;
-%         while (!I->next)
-%           ;
-%         I->next->locked = false;
-%       }
-% \end{ccode}}
-% 
-% \begin{slide}{MCS Release with CAS}
-% \mcsrelease
-% \begin{overlayarea}{\textwidth}{40mm}
-% \itms{
-% \only<1>{
-%   \item If \texttt{I->next} NULL and \texttt{*L == I}
-%   \ittms{
-%     \item No one else is waiting for lock, OK to set \texttt{*L =
-%         NULL} \\[2mm]
-%       \centerline{\input{mcsrel}}
-%   }
-% }
-% \only<2>{
-%   \item If \texttt{I->next} NULL and \texttt{*L != I}
-%   \ittms{
-%     \item Another thread is in the middle of \texttt{acquire}
-%     \item Just wait for \texttt{I->next} to be non-NULL \\[2mm]
-%       \centerline{\input{mcsrel2}}
-%   }
-% }
-% \only<3>{
-%   \item If \texttt{I->next} is non-NULL
-%   \ittms{
-%     \item \texttt{I->next} oldest waiter, wake up
-%       w.\ \texttt{I->next->locked = false} \\[2mm]
-%       \centerline{\input{mcsrel3}}
-%   }
-% }
-% }
-% \end{overlayarea}
-% \end{slide}
-% 
+\begin{slide}{Improving Spinlocks}
+\itms{
+  \item Test-and-set spinlock has several advantages
+  \ittms{
+    \item Simple to implement and understand
+    \item One memory location for arbitrarily many CPUs
+  }
+  \item But also has disadvantages
+  \ittms{
+    \item Lots of traffic over memory bus (especially when $>1$
+      spinner)
+    \item Not necessarily fair (same CPU acquires lock many times)
+    \item Even less fair on a NUMA machine
+    \item Allegedly Google had fairness problems even on Opterons
+  }
+  \item Idea 1: Avoid spinlocks altogether
+  \ittms{
+    \item Lock free algorithms, RCU, transactional memory
+  }
+  \item Idea 2: Reduce bus traffic with better spinlocks
+  \ittms{
+    \item Design lock that spins only on local memory
+    \item Also gives better fairness
+  }
+}
+\end{slide}
+
+\begin{slide}{MCS lock}
+\itms{
+  \item Idea 2: Build a better spinlock
+  \item Lock designed by
+    \href{http://www.cs.rice.edu/~johnmc/papers/tocs91.pdf}{Mellor-Crummey
+        and Scott}
+  \ittms{
+    \item Goal:  reduce bus traffic on cc machines, improve fairness
+  }
+  \item Each CPU has a \texttt{qnode} structure in local memory
+}
+\begin{ccode}
+         typedef struct qnode {
+           struct qnode *next;
+           bool locked;
+         } qnode;
+\end{ccode}
+\itms{
+  \item[]
+  \ittms{
+    \item Local can mean local memory in NUMA machine
+    \item Or just its own cache line that gets cached in exclusive mode
+  }
+  \item A lock is just a pointer to a \texttt{qnode}
+}
+\begin{ccode}
+      typedef qnode *lock;
+\end{ccode}
+\itms{
+  \item Lock is list of CPUs holding or waiting for lock
+  \item While waiting, spin on \emph{your local} \texttt{locked} flag
+}
+\end{slide}
+
+\defverbatim[colored]\mcsacquire{
+\begin{smallccode}
+      acquire(lock *L, qnode *I) {
+        I->next = NULL;
+        qnode *predecessor = I;
+	XCHG(predecessor, *L); /* atomic swap */
+        if (predecessor != NULL) {
+          I->locked = true;
+          predecessor->next = I;
+          while (I->locked)
+            ;
+        }
+      }
+\end{smallccode}}
+
+\begin{frame}
+\frametitle{MCS Acquire}
+\mcsacquire
+\vspace*{-3mm}
+\itms{
+    \item If unlocked, \texttt{L} is \texttt{NULL}
+    \item If locked, no waiters, \texttt{L} is owner's \texttt{qnode}
+    \item If waiters, \texttt{*L} is tail of waiter list:
+}
+\smallskip
+\vbox to 19mm{
+\vss
+\hspace*{3mm}\only<1>{\input{mcs}}%
+\only<2>{\input{mcs1}}%
+\only<3>{\input{mcs2}}%
+\only<4>{\input{mcs3}}%
+}
+\end{frame}
+
+
+\defverbatim[colored]\mcsrelease{
+\begin{ccode}
+      release(lock *L, qnode *I) {
+        if (!I->next)
+	  if (CAS(*L, I, NULL))
+            return;
+        while (!I->next)
+          ;
+        I->next->locked = false;
+      }
+\end{ccode}}
+
+\begin{slide}{MCS Release with CAS}
+\mcsrelease
+\begin{overlayarea}{\textwidth}{40mm}
+\itms{
+\only<1>{
+  \item If \texttt{I->next} NULL and \texttt{*L == I}
+  \ittms{
+    \item No one else is waiting for lock, OK to set \texttt{*L =
+        NULL} \\[2mm]
+      \centerline{\input{mcsrel}}
+  }
+}
+\only<2>{
+  \item If \texttt{I->next} NULL and \texttt{*L != I}
+  \ittms{
+    \item Another thread is in the middle of \texttt{acquire}
+    \item Just wait for \texttt{I->next} to be non-NULL \\[2mm]
+      \centerline{\input{mcsrel2}}
+  }
+}
+\only<3>{
+  \item If \texttt{I->next} is non-NULL
+  \ittms{
+    \item \texttt{I->next} oldest waiter, wake up
+      w.\ \texttt{I->next->locked = false} \\[2mm]
+      \centerline{\input{mcsrel3}}
+  }
+}
+}
+\end{overlayarea}
+\end{slide}
+
 % \begin{slide}{MCS Release w/o CAS}
 % %\vspace*{-.2in}
 % \itms{
@@ -1625,53 +1656,94 @@ void spinlock_acquire(struct spinlock *lk)
 
 \begin{slide}{Wait Channels}
 \itms{
-  \item OS locks (except spinlocks) use wait channels to manage sleeping 
-      threads
-  \item \code{void wchan_sleep(struct wchan *wc);}
+  \item OS synchronization (except spinlocks) use wait channels
+  \ittms{
+    \item Manages a list of sleeping threads
+    \item Abstracts details of the thread scheduler
+  }
+  \item \code{void WaitChannel_Lock(WaitChannel *wc);}
+  \ittms{
+    \item Lock wait channel operations
+    \item Prevents a race between sleep and wake
+  }
+  \item \code{void WaitChannel_Sleep(WaitChannel *wc);}
   \ittms{
     \item Blocks calling thread on wait channnel \code{wc}
     \item Causes a context switch (e.g., \code{thread_yield})
   }
-  \item \code{void wchan_wakeall(struct wchan *wc);}
+  \item \code{void WaitChannel_WakeAll(WaitChannel *wc);}
   \ittms{
     \item Unblocks all threads sleeping on the wait channel
   }
-  \item \code{void wchan_wakeone(struct wchan *wc);}
+  \item \code{void WaitChannel_Wake(WaitChannel *wc);}
   \ittms{
     \item Unblocks one threads sleeping on the wait channel
-  }
-  \item \code{void wchan_lock(struct wchan *wc);}
-  \ittms{
-    \item Lock wait channel operations
-    \item Prevents a race between sleep and wakeone
   }
 }
 \end{slide}
 
-\begin{slide}{OS/161 Semaphores}
+\begin{slide}{Hand-over-Hand Locking}
+\itms{
+  \item Hand-over-Hand Locking allows for fine-grained locking
+  \item Useful for concurrent data structure manipulation
+  \itms{
+    \item Hold at most two locks the previous and next locks
+    \item Locks must be ordered in a sequence
+    \item You may not go backwards.  Why?
+  }
+  \item Example: we have locks A, B, C
+}
+\begin{ccode}
+  lock(A)
+  // Operate on A
+  lock(B)
+  unlock(A)
+  // Operate on B
+  lock(C)
+  unlock(B)
+  // Operate on C
+  unlock(C)
+\end{ccode}
+\end{slide}
+
+\begin{slide}{Example Semaphores}
+\itms{
+  \item Mutexes, CVs and Semaphores use WaitChannel and Hand-over-Hand Locking
+  \item Lock order: \code{sem_lock} Spinlock, WaitChannel Lock
+}
+\begin{smallccode}
+typedef struct Semaphore {
+    int		sem_count;
+    Spinlock	*sem_lock;
+    WaitChannel	*sem_wchan;
+} Semaphore;
+\end{smallccode}
+\end{slide}
+
+\begin{slide}{Example: Semaphores Implementation}
 \vspace{-1em}
 \begin{smallccode}
-P(struct semaphore *sem) {
-  spinlock_acquire(&sem->sem_lock);
-  while (sem->sem count == 0) {
+Semaphore_Wait(Semaphore *sem) {
+  Spinlock_Lock(&sem->sem_lock);
+  while (sem->sem_count == 0) {
     /* Locking the wchan prevents a race on sleep */
-    wchan_lock(sem->sem wchan);
+    WaitChannel_Lock(sem->sem_wchan);
     /* Release spinlock before sleeping */
-    spinlock_release(&sem->sem_lock);
+    Spinlock_Unlock(&sem->sem_lock);
     /* Wait channel protected by it's own lock */
-    wchan_sleep(sem->sem wchan);
+    WaitChannel_Sleep(sem->sem_wchan);
     /* Recheck condition, no locks held */
-    spinlock_acquire(&sem->sem_lock);
+    Spinlock_Lock(&sem->sem_lock);
   }
-  sem->sem count--;
-  spinlock release(&sem->sem lock);
+  sem->sem_count--;
+  Spinlock_Unlock(&sem->sem_lock);
 }
 
-V(struct semaphore *sem) {
-  spinlock_acquire(&sem->sem_lock);
-  sem->count++;
-  wchan_wakeone(sem->sem wchan);
-  spinlock_release(&sem->sem_lock);
+Semaphore_Post(Semaphore *sem) {
+  Spinlock_Lock(&sem->sem_lock);
+  sem->sem_count++;
+  WaitChannel_Wake(sem->sem_wchan);
+  Spinlock_Unlock(&sem->sem_lock);
 }
 \end{smallccode}
 \end{slide}
