@@ -49,7 +49,7 @@
 \item Hardware provides multiple protection modes% (or domains)
 \item At least two modes:
 \ittms{
-\item {\em Kernel Mode} or {\em Privledged Mode} -- Operating System
+\item {\em Kernel Mode} or {\em Privileged Mode} -- Operating System
 \item {\em User Mode} -- Applications
 }
 \item Kernel Mode can access privileged CPU features
@@ -124,7 +124,7 @@
 \ittms{
 \item Processor stops at the instruction that triggered the exception (usually)
 \item Control is transferred to a fixed location where the exception handler is 
-	located in privledged mode
+	located in privileged mode
 }
 \item System calls are a class of exceptions!
 }
@@ -192,13 +192,13 @@
 }
 \itms{
 \item {\em Target Offset}: First instruction of the interrupt handler
-\item {\em Target Selector}: Code segment -- sets priviledge level (user/kernel 
+\item {\em Target Selector}: Code segment -- sets privilege level (user/kernel 
     mode)
     \ittms{
     \item More on this later
     }
 \item {\em P}: Present (i.e. valid)
-\item {\em DPL}: Minimum priviedge level that can trigger it
+\item {\em DPL}: Minimum privilege level that can trigger it
     \ittms{
     \item Prevents user programs from triggering device interrupts
     }
@@ -252,7 +252,7 @@
 
 \begin{slide}{OS Handler Details}
 \itms{
-\item Interupt Vectors defined in \grokdef{trap\_table}
+\item Interrupt Vectors defined in \grokdef{trap\_table}
 \item IDT created and IDTR loaded in \grokdef{Trap\_Init}
 \item Each interrupt vector has a custom assembly entry point
 \item \grokdef{TRAP\_NOEC} and \grokdef{TRAP\_EC} macro for each
