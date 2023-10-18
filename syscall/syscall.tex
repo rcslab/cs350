@@ -453,13 +453,13 @@ bar:
 \pgfdeclarelayer{background}
 \pgfdeclarelayer{foreground}
 \pgfsetlayers{background,main,foreground}
-\tikzstyle{stk}=[draw, fill=white, text width=9em, text centered, minimum 
+\tikzstyle{stk}=[draw, fill=white, text width=12em, text centered, minimum 
 height=14.75em]
-\tikzstyle{sstk}=[draw, fill=white, text width=9em, text centered, minimum 
+\tikzstyle{sstk}=[draw, fill=white, text width=12em, text centered, minimum 
 height=1.5em]
-\tikzstyle{mstk}=[draw, fill=white, text width=9em, text centered, minimum 
+\tikzstyle{mstk}=[draw, fill=white, text width=12em, text centered, minimum 
 height=4em]
-\tikzstyle{lstk}=[draw, fill=white, text width=9em, text centered, minimum 
+\tikzstyle{lstk}=[draw, fill=white, text width=12em, text centered, minimum 
 height=6em]
 \tikzstyle{lbl}=[align=center]
 
@@ -563,7 +563,7 @@ height=6em]
 	\path (f3)+(0,-1.5em) node (f4) [sstk] {{\tt write()} frame};
 	\path (f0.south)+(0,-1em) node (lbl) {User Stack};
 
-	\path (f0)+(10em,0) node (k0) [stk] {};
+	\path (f0)+(14em,0) node (k0) [stk] {};
 	\path (k0.north)+(0,-1.25em) node (k1) [mstk]
 	{{\tt trap\_common}\\trapframe};
 	\path (k0.south)+(0,-1em) node (lbl) {Kernel Stack};
@@ -586,7 +586,7 @@ height=6em]
 	\path (f3)+(0,-1.5em) node (f4) [sstk] {{\tt write()} frame};
 	\path (f0.south)+(0,-1em) node (lbl) {User Stack};
 
-	\path (f0)+(10em,0) node (k0) [stk] {};
+	\path (f0)+(14em,0) node (k0) [stk] {};
 	\path (k0.north)+(0,-1.25em) node (k1) [mstk]
 	{{\tt trap\_common}\\{\em trapframe}};
 	\path (k1)+(0,-2.75em) node (k2) [sstk] {\tt trap\_entry()};
@@ -610,7 +610,7 @@ height=6em]
 	\path (f3)+(0,-1.5em) node (f4) [sstk] {{\tt write()} frame};
 	\path (f0.south)+(0,-1em) node (lbl) {User Stack};
 
-	\path (f0)+(10em,0) node (k0) [stk] {};
+	\path (f0)+(14em,0) node (k0) [stk] {};
 	\path (k0.north)+(0,-1.25em) node (k1) [mstk]
 	{{\tt trap\_common}\\{\em trapframe}};
 	\path (k1)+(0,-2.75em) node (k2) [sstk] {\tt trap\_entry()};
@@ -635,7 +635,7 @@ height=6em]
 	\path (f3)+(0,-1.5em) node (f4) [sstk] {{\tt write()} frame};
 	\path (f0.south)+(0,-1em) node (lbl) {User Stack};
 
-	\path (f0)+(10em,0) node (k0) [stk] {};
+	\path (f0)+(14em,0) node (k0) [stk] {};
 	\path (k0.north)+(0,-1.25em) node (k1) [mstk]
 	{{\tt trap\_common}\\{\em trapframe}};
 	\path (k1)+(0,-2.75em) node (k2) [sstk] {\tt trap\_entry()};
@@ -661,7 +661,7 @@ height=6em]
 	\path (f3)+(0,-1.5em) node (f4) [sstk] {{\tt write()} frame};
 	\path (f0.south)+(0,-1em) node (lbl) {User Stack};
 
-	\path (f0)+(10em,0) node (k0) [stk] {};
+	\path (f0)+(14em,0) node (k0) [stk] {};
 	\path (k0.north)+(0,-1.25em) node (k1) [mstk]
 	{{\tt trap\_common}\\{\em trapframe}};
 	\path (k1)+(0,-2.75em) node (k2) [sstk] {\tt trap\_entry()};
@@ -688,7 +688,7 @@ height=6em]
 	\path (f3)+(0,-1.5em) node (f4) [sstk] {{\tt write()} frame};
 	\path (f0.south)+(0,-1em) node (lbl) {User Stack};
 
-	\path (f0)+(10em,0) node (k0) [stk] {};
+	\path (f0)+(14em,0) node (k0) [stk] {};
 	\path (k0.north)+(0,-1.25em) node (k1) [mstk]
 	{{\tt trap\_common}\\{\em trapframe}};
 	\path (k1)+(0,-2.75em) node (k2) [sstk] {\tt trap\_entry()};
@@ -714,7 +714,7 @@ height=6em]
 	\path (f3)+(0,-1.5em) node (f4) [sstk] {{\tt write()} frame};
 	\path (f0.south)+(0,-1em) node (lbl) {User Stack};
 
-	\path (f0)+(10em,0) node (k0) [stk] {};
+	\path (f0)+(14em,0) node (k0) [stk] {};
 	\path (k0.north)+(0,-1.25em) node (k1) [mstk]
 	{{\tt trap\_common}\\{\em trapframe}};
 	\path (k1)+(0,-2.75em) node (k2) [sstk] {\tt trap\_entry()};
@@ -739,7 +739,7 @@ height=6em]
 	\path (f3)+(0,-1.5em) node (f4) [sstk] {{\tt write()} frame};
 	\path (f0.south)+(0,-1em) node (lbl) {User Stack};
 
-	\path (f0)+(10em,0) node (k0) [stk] {};
+	\path (f0)+(14em,0) node (k0) [stk] {};
 	\path (k0.north)+(0,-1.25em) node (k1) [mstk]
 	{{\tt trap\_common}\\{\em trapframe}};
 	\path (k1)+(0,-2.75em) node (k2) [sstk] {\tt trap\_entry()};
@@ -763,7 +763,7 @@ height=6em]
 	\path (f3)+(0,-1.5em) node (f4) [sstk] {{\tt write()} frame};
 	\path (f0.south)+(0,-1em) node (lbl) {User Stack};
 
-	\path (f0)+(10em,0) node (k0) [stk] {};
+	\path (f0)+(14em,0) node (k0) [stk] {};
 	\path (k0.north)+(0,-1.25em) node (k1) [mstk]
 	{{\tt trap\_common}\\{\em trapframe}};
 	\path (k0.south)+(0,-1em) node (lbl) {Kernel Stack};
@@ -786,7 +786,7 @@ height=6em]
 	\path (f3)+(0,-1.5em) node (f4) [sstk] {{\tt write()} frame};
 	\path (f0.south)+(0,-1em) node (lbl) {User Stack};
 
-	\path (f0)+(10em,0) node (k0) [stk] {};
+	\path (f0)+(14em,0) node (k0) [stk] {};
 	\path (k0.south)+(0,-1em) node (lbl) {Kernel Stack};
 \end{tikzpicture}
 \end{figure}
@@ -806,7 +806,7 @@ height=6em]
 	\path (f2)+(0,-1.5em) node (f3) [sstk] {{\tt printf()} frame};
 	\path (f0.south)+(0,-1em) node (lbl) {User Stack};
 
-	\path (f0)+(10em,0) node (k0) [stk] {};
+	\path (f0)+(14em,0) node (k0) [stk] {};
 	\path (k0.south)+(0,-1em) node (lbl) {Kernel Stack};
 \end{tikzpicture}
 \end{figure}
@@ -902,7 +902,7 @@ height=6em]
 	\path (f1)+(0,-1.5em) node (f2) [sstk] {{\tt main()} frame};
 	\path (f0.south)+(0,-1em) node (lbl) {User Stack};
 
-	\path (f0)+(10em,0) node (k0) [stk] {};
+	\path (f0)+(14em,0) node (k0) [stk] {};
 	\path (k0.north)+(0,-1.25em) node (k1) [mstk]
 	{{\tt trap\_common}\\{\em trapframe}};
 	\path (k0.south)+(0,-1em) node (lbl) {Kernel Stack 1};
@@ -924,7 +924,7 @@ height=6em]
 	\path (f1)+(0,-1.5em) node (f2) [sstk] {{\tt main()} frame};
 	\path (f0.south)+(0,-1em) node (lbl) {User Stack};
 
-	\path (f0)+(10em,0) node (k0) [stk] {};
+	\path (f0)+(14em,0) node (k0) [stk] {};
 	\path (k0.north)+(0,-1.25em) node (k1) [mstk]
 	{{\tt trap\_common}\\{\em trapframe}};
 	\path (k1)+(0,-2.75em) node (k2) [sstk] {\tt Trap\_Entry()};
@@ -945,7 +945,7 @@ height=6em]
 	\path (f1)+(0,-1.5em) node (f2) [sstk] {{\tt main()} frame};
 	\path (f0.south)+(0,-1em) node (lbl) {User Stack};
 
-	\path (f0)+(10em,0) node (k0) [stk] {};
+	\path (f0)+(14em,0) node (k0) [stk] {};
 	\path (k0.north)+(0,-1.25em) node (k1) [mstk]
 	{{\tt trap\_common}\\{\em trapframe}};
 	\path (k1)+(0,-2.75em) node (k2) [sstk] {\tt Trap\_Entry()};
@@ -967,7 +967,7 @@ height=6em]
 	\path (f1)+(0,-1.5em) node (f2) [sstk] {{\tt main()} frame};
 	\path (f0.south)+(0,-1em) node (lbl) {User Stack};
 
-	\path (f0)+(10em,0) node (k0) [stk] {};
+	\path (f0)+(14em,0) node (k0) [stk] {};
 	\path (k0.north)+(0,-1.25em) node (k1) [mstk]
 	{{\tt trap\_common}\\{\em trapframe}};
 	\path (k1)+(0,-2.75em) node (k2) [sstk] {\tt Trap\_Entry()};
@@ -990,7 +990,7 @@ height=6em]
 	\path (f1)+(0,-1.5em) node (f2) [sstk] {{\tt main()} frame};
 	\path (f0.south)+(0,-1em) node (lbl) {User Stack};
 
-	\path (f0)+(10em,0) node (k0) [stk] {};
+	\path (f0)+(14em,0) node (k0) [stk] {};
 	\path (k0.north)+(0,-1.25em) node (k1) [mstk]
 	{{\tt trap\_common}\\{\em trapframe}};
 	\path (k1)+(0,-2.75em) node (k2) [sstk] {\tt Trap\_Entry()};
@@ -1013,7 +1013,7 @@ height=6em]
 	\path (f1)+(0,-1.5em) node (f2) [sstk] {{\tt main()} frame};
 	\path (f0.south)+(0,-1em) node (lbl) {User Stack};
 
-	\path (f0)+(10em,0) node (k0) [stk] {};
+	\path (f0)+(14em,0) node (k0) [stk] {};
 	\path (k0.north)+(0,-1.25em) node (k1) [mstk]
 	{{\tt trap\_common}\\{\em trapframe}};
 	\path (k1)+(0,-2.75em) node (k2) [sstk] {\tt Trap\_Entry()};
@@ -1038,7 +1038,7 @@ height=6em]
 	\path (f1)+(0,-1.5em) node (f2) [sstk] {{\tt main()} frame};
 	\path (f0.south)+(0,-1em) node (lbl) {User Stack};
 
-	\path (f0)+(10em,0) node (k0) [stk] {};
+	\path (f0)+(14em,0) node (k0) [stk] {};
 	\path (k0.north)+(0,-1.25em) node (k1) [mstk]
 	{{\tt trap\_common}\\{\em trapframe}};
 	\path (k1)+(0,-2.75em) node (k2) [sstk] {\tt Trap\_Entry()};
@@ -1071,7 +1071,7 @@ height=6em]
 	\path (k6)+(0,-2.75em) node (k7) [mstk] {\em switchframe};
 	\path (k0.south)+(0,-1em) node (lbl) {Kernel Stack 1};
 
-	\path (k0)+(10em,0) node (x0) [stk] {};
+	\path (k0)+(14em,0) node (x0) [stk] {};
 	\path (x0.north)+(0,-1.25em) node (x1) [mstk]
 	{{\tt trap\_common}\\{\em trapframe}};
 	\path (x1)+(0,-2.75em) node (x2) [sstk] {\tt Trap\_Entry()};
