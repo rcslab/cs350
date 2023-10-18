@@ -287,15 +287,27 @@
 \section{Calling Conventions}
 
 \begin{slide}{How are values passed?}
+\begin{block}{}
+{\em Application Binary Interface} (ABI) defines the contract between functions 
+    an application and system calls.
+\end{block}
 \itms{
-\item Application Binary Interface (ABI) defines the contract between functions an application and system calls.
-\item Operating Systems and Compilers must obey these rules referred to as the {\em calling convention}
+\item Operating Systems and Compilers must obey these rules referred to as the 
+    {\em calling convention}
+\item Defines
+    \ittms{
+    \item Meaning of registers during function calls and system calls
+    \item Who's responsible to save registers
+    \item Describes stack alignment rules
+    }
 }
 \end{slide}
 
 \begin{slide}{System Call Numbering}
 \itms{
 \item System calls numbers defined in kern/include/syscall.h
+\item Syscall number is passed as the first argument into syscall
+\gap
 }
 \begin{ccode}
 #define SYSCALL_NULL		0x00
@@ -345,6 +357,7 @@
 \item Functions are called with the \texttt{call} instruction
 \item \code{call} pushes the return address to the stack and jumps to the 
     target
+\gap
 }
 \begin{x64asm}
 foo:
@@ -366,6 +379,7 @@ foo:
 \itms{
 \item Simple functions may not need to save any registers
 \item We save callee-saved registers if needed for performance
+\gap
 }
 \begin{ccode}
 int bar(int a) {
