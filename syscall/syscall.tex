@@ -250,6 +250,22 @@
 \end{columns}
 \end{slide}
 
+\begin{slide}{OS Handler Details}
+\itms{
+\item Interupt Vectors defined in \grokdef{trap\_table}
+\item IDT created and IDTR loaded in \grokdef{Trap\_Init}
+\item Each interrupt vector has a custom assembly entry point
+\item \grokdef{TRAP\_NOEC} and \grokdef{TRAP\_EC} macro for each
+    \ittms{
+    \item Pushes the start of the trap frame including vector number
+    \item Most exceptions in x86 push an extra error code on the stack
+    \item NOEC version pushes an extra 0 to make the stack layout identical
+    }
+\item \grokdef{trap\_common} pushes the CPU registers
+\item \grokdef{trap\_entry} is the C handler that dispatches interrupts
+}
+\end{slide}
+
 \begin{slide}{System Call Operation Details}
 \itms{
 \item Application calls into the C library (e.g., calls \texttt{write()})
