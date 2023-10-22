@@ -49,7 +49,7 @@
 \item Hardware provides multiple protection modes% (or domains)
 \item At least two modes:
 \ittms{
-\item {\em Kernel Mode} or {\em Privledged Mode} -- Operating System
+\item {\em Kernel Mode} or {\em Privileged Mode} -- Operating System
 \item {\em User Mode} -- Applications
 }
 \item Kernel Mode can access privileged CPU features
@@ -124,7 +124,7 @@
 \ittms{
 \item Processor stops at the instruction that triggered the exception (usually)
 \item Control is transferred to a fixed location where the exception handler is 
-	located in privledged mode
+	located in privileged mode
 }
 \item System calls are a class of exceptions!
 }
@@ -157,65 +157,112 @@
 \end{smallccode}
 \end{slide}
 
-\begin{slide}{System Calls XXX}
+\begin{slide}{System Calls}
 \itms{
 \item System calls are performed by triggering the \texttt{T\_SYS} exception:
 \gap
 }
 \begin{enumerate}
 \item Application loads the arguments into CPU registers
-\item Load the system call number into register \code{$v0}
-\item Executes \texttt{syscall} instruction to trigger \texttt{EX\_SYS} 
-    exception
-\item Kernel processes the system call through the exception handler
-\item Returns to userspace using \code{rfe}, return from exception 
-    instruction
+\item Load the system call number into register \code{rdi} (first arg)
+\item Executes \code{int 60} instruction to trigger \texttt{T\_SYS} exception
+\item Processor looks up the interrupt vector
+\item Processor jumps to the kernel exception handler
+\item Returns to userspace using \code{iret}, return from exception instruction
 \end{enumerate}
+\end{slide}
+
+\begin{slide}{Hardware Interrupt Handling in x86--64}
 \itms{
-\gap
-\item Many processors include similar instructions (e.g., \code{syscall} in x86)
+\item Interrupt descriptor table: defines the entry point for interrupt 
+    vector.
+\item Configuring the IDT:
+}
+\begin{enumerate}
+\item OS initializes IDT with entry point of interrupt vectors (1-255)
+\end{enumerate}
+\centerline{
+    \includegraphics[height=50mm]{intgate.pdf}
 }
 \end{slide}
 
-\begin{slide}{Hardware Handling in MIPS R3000 (Sys/161)}
+\begin{slide}{Interrupt Gate Descriptor (x86--64)}
+\centerline{
+    \includegraphics[height=30mm]{intgate.pdf}
+}
 \itms{
-\item Exception handlers in MIPS R3000 are at fixed locations
-\gap
-\item Processor jumps to these addresses whenever an exception is encountered
-\ittms{
-\item \texttt{0x8000\_0000} User TLB Handler (virtual memory)
-\item \texttt{0x8000\_0080} General Exception Handler
-}
-\item TLB exceptions are frequent
-\ittms{
-	\item Handler is usually hand optimized assembly, unlike general exceptions
-}
-\gap
-\item Remember that \texttt{0x8000\_0000}--\texttt{0x9FFF\_FFFF}:
-\ittms{
-	\item Mapped to the first 512MBs of physical memory
-	\item Where the OS resides
-}
+\item {\em Target Offset}: First instruction of the interrupt handler
+\item {\em Target Selector}: Code segment -- sets privilege level (user/kernel 
+    mode)
+    \ittms{
+    \item More on this later
+    }
+\item {\em P}: Present (i.e. valid)
+\item {\em DPL}: Minimum privilege level that can trigger it
+    \ittms{
+    \item Prevents user programs from triggering device interrupts
+    }
+\item {\em Type}: Constant for 64-bit IDT entry
+\item {\em IST}: Kernel stack to use
 }
 \end{slide}
 
-\begin{slide}{Hardware Handling: the MIPS Coprocessor}
+\begin{slide}{Configuring Interrupt Handling (x86--64)}
+\begin{enumerate}
+\item OS initializes IDT with entry point of interrupt vectors (1-255)
+\item OS initializes the IDT descriptor containing address and length of IDT
+\item OS uses \code{lidt} instruction to load the IDTR
+\end{enumerate}
+\centerline{
+    \includegraphics[height=55mm]{idtr.pdf}
+}
+\end{slide}
+
+\begin{slide}{Hardware Interrupt Handling Process (x86--64)}
+\begin{enumerate}
+\item Finds the IDT through the IDTR register
+\item Read the IDT descriptor entry
+\item Look up the kernel stack in the TSS (Task State Segment)
+\item IST field specifies which stack to use
+\item CPU pushes the interrupt stack frame
+\end{enumerate}
+\centerline{
+    \includegraphics[height=45mm]{intstack.pdf}
+}
+\end{slide}
+
+\begin{slide}{Hardware Interrupt Handling Process (x86--64)}
+\begin{columns}
+\column{0.6\textwidth}
+\begin{enumerate}
+\item Finds the IDT through the IDTR register
+\item Read the IDT descriptor entry
+\item Look up the kernel stack in the TSS (Task State Segment)
+\item IST field specifies which stack to use
+\item CPU pushes the interrupt stack frame
+\item Kernel pushes the trap frame
+\item Kernel sets up CPU to known state to run C code
+\end{enumerate}
+\column{0.4\textwidth}
+\centerline{
+    \includegraphics[height=75mm]{tss.pdf}
+}
+\end{columns}
+\end{slide}
+
+\begin{slide}{OS Handler Details}
 \itms{
-\item Kernel accesses exception and processor state through the MIPS coprocessor
-\ittms{
-\item MIPS CP0: system control coprocessor
-\item MIPS CP1 floating point coprocessor
-}
-\gap
-\item System Control Coprocessor (CP0) contains exception handling information
-\ittms{
-\item Use the mfc0/mtc0 (Move from/to co-processor 0) instructions
-\item \texttt{c0\_status}: CPU status include kerner/user mode flag
-\item \texttt{c0\_cause}: Cause of the exception
-\item \texttt{c0\_epc}: Program counter (PC) where the exception occurred
-\item \texttt{c0\_vaddr}: Virtual address associated with the fault
-\item \texttt{c0\_context}: Used by OS/161 to store the CPU number
-}
+\item Interrupt Vectors defined in \grokdef{trap\_table}
+\item IDT created and IDTR loaded in \grokdef{Trap\_Init}
+\item Each interrupt vector has a custom assembly entry point
+\item \grokdef{TRAP\_NOEC} and \grokdef{TRAP\_EC} macro for each
+    \ittms{
+    \item Pushes the start of the trap frame including vector number
+    \item Most exceptions in x86 push an extra error code on the stack
+    \item NOEC version pushes an extra 0 to make the stack layout identical
+    }
+\item \grokdef{trap\_common} pushes the CPU registers
+\item \grokdef{trap\_entry} is the C handler that dispatches interrupts
 }
 \end{slide}
 
@@ -223,7 +270,7 @@
 \itms{
 \item Application calls into the C library (e.g., calls \texttt{write()})
 \item Library executes the \texttt{syscall} instruction
-\item Kernel exception handler \texttt{0x8000\_0080} runs
+\item Kernel exception handler runs
 \ittms{
 \item Switch to kernel stack
 \item Create a {\em trapframe} which contains the program state
@@ -231,7 +278,7 @@
 \item Determine the type of system call
 \item Run the function in the kernel (e.g., \texttt{sys\_write()})
 \item Restore application state from the trap frame
-\item Return from exception (\code{rfe} instruction)
+\item Return from exception (\code{iret} instruction)
 }
 \item Library wrapper function returns to the application
 }
@@ -240,35 +287,40 @@
 \section{Calling Conventions}
 
 \begin{slide}{How are values passed?}
-\begin{columns}
-\column{0.7\textwidth}
+\begin{block}{}
+{\em Application Binary Interface} (ABI) defines the contract between functions 
+    an application and system calls.
+\end{block}
 \itms{
-\item Application Binary Interface (ABI) defines the contract between functions an application and system calls.
-\item Operating Systems and Compilers must obey these rules referred to as the {\em calling convention}
-\item MIPS + OS/161 Calling Convention
-\ittms{
-\item System call number in \texttt{v0}
-\item First four arguments in \texttt{a0, a1, a2, a3}
-\item Remaining arguments passed on the stack
-\item Success/fail in \texttt{a3} and return value/error code in 
-    \texttt{v0}
+\item Operating Systems and Compilers must obey these rules referred to as the 
+    {\em calling convention}
+\item Defines
+    \ittms{
+    \item Meaning of registers during function calls and system calls
+    \item Who's responsible to save registers
+    \item Describes stack alignment rules
+    }
 }
-}
-\column{0.3\textwidth}
-\end{columns}
 \end{slide}
 
 \begin{slide}{System Call Numbering}
 \itms{
-\item System calls numbers defined in kern/include/kern/syscall.h
+\item System calls numbers defined in kern/include/syscall.h
+\item Syscall number is passed as the first argument into syscall
+\gap
 }
 \begin{ccode}
-#define SYS_fork      0
-#define SYS_vfork     1
-#define SYS_execv     2
-#define SYS__exit     3
-#define SYS_waitpid   4
-#define SYS_getpid    5
+#define SYSCALL_NULL		0x00
+#define SYSCALL_TIME		0x01
+#define SYSCALL_GETPID		0x02
+#define SYSCALL_EXIT		0x03
+#define SYSCALL_SPAWN		0x04
+#define SYSCALL_WAIT		0x05
+
+// Memory
+#define SYSCALL_MMAP		0x08
+#define SYSCALL_MUNMAP		0x09
+#define SYSCALL_MPROTECT	0x0A
 ...
 \end{ccode}
 \end{slide}
@@ -305,6 +357,7 @@
 \item Functions are called with the \texttt{call} instruction
 \item \code{call} pushes the return address to the stack and jumps to the 
     target
+\gap
 }
 \begin{x64asm}
 foo:
@@ -326,6 +379,7 @@ foo:
 \itms{
 \item Simple functions may not need to save any registers
 \item We save callee-saved registers if needed for performance
+\gap
 }
 \begin{ccode}
 int bar(int a) {
@@ -399,13 +453,13 @@ bar:
 \pgfdeclarelayer{background}
 \pgfdeclarelayer{foreground}
 \pgfsetlayers{background,main,foreground}
-\tikzstyle{stk}=[draw, fill=white, text width=9em, text centered, minimum 
+\tikzstyle{stk}=[draw, fill=white, text width=12em, text centered, minimum 
 height=14.75em]
-\tikzstyle{sstk}=[draw, fill=white, text width=9em, text centered, minimum 
+\tikzstyle{sstk}=[draw, fill=white, text width=12em, text centered, minimum 
 height=1.5em]
-\tikzstyle{mstk}=[draw, fill=white, text width=9em, text centered, minimum 
+\tikzstyle{mstk}=[draw, fill=white, text width=12em, text centered, minimum 
 height=4em]
-\tikzstyle{lstk}=[draw, fill=white, text width=9em, text centered, minimum 
+\tikzstyle{lstk}=[draw, fill=white, text width=12em, text centered, minimum 
 height=6em]
 \tikzstyle{lbl}=[align=center]
 
@@ -509,7 +563,7 @@ height=6em]
 	\path (f3)+(0,-1.5em) node (f4) [sstk] {{\tt write()} frame};
 	\path (f0.south)+(0,-1em) node (lbl) {User Stack};
 
-	\path (f0)+(10em,0) node (k0) [stk] {};
+	\path (f0)+(14em,0) node (k0) [stk] {};
 	\path (k0.north)+(0,-1.25em) node (k1) [mstk]
 	{{\tt trap\_common}\\trapframe};
 	\path (k0.south)+(0,-1em) node (lbl) {Kernel Stack};
@@ -532,7 +586,7 @@ height=6em]
 	\path (f3)+(0,-1.5em) node (f4) [sstk] {{\tt write()} frame};
 	\path (f0.south)+(0,-1em) node (lbl) {User Stack};
 
-	\path (f0)+(10em,0) node (k0) [stk] {};
+	\path (f0)+(14em,0) node (k0) [stk] {};
 	\path (k0.north)+(0,-1.25em) node (k1) [mstk]
 	{{\tt trap\_common}\\{\em trapframe}};
 	\path (k1)+(0,-2.75em) node (k2) [sstk] {\tt trap\_entry()};
@@ -556,7 +610,7 @@ height=6em]
 	\path (f3)+(0,-1.5em) node (f4) [sstk] {{\tt write()} frame};
 	\path (f0.south)+(0,-1em) node (lbl) {User Stack};
 
-	\path (f0)+(10em,0) node (k0) [stk] {};
+	\path (f0)+(14em,0) node (k0) [stk] {};
 	\path (k0.north)+(0,-1.25em) node (k1) [mstk]
 	{{\tt trap\_common}\\{\em trapframe}};
 	\path (k1)+(0,-2.75em) node (k2) [sstk] {\tt trap\_entry()};
@@ -581,7 +635,7 @@ height=6em]
 	\path (f3)+(0,-1.5em) node (f4) [sstk] {{\tt write()} frame};
 	\path (f0.south)+(0,-1em) node (lbl) {User Stack};
 
-	\path (f0)+(10em,0) node (k0) [stk] {};
+	\path (f0)+(14em,0) node (k0) [stk] {};
 	\path (k0.north)+(0,-1.25em) node (k1) [mstk]
 	{{\tt trap\_common}\\{\em trapframe}};
 	\path (k1)+(0,-2.75em) node (k2) [sstk] {\tt trap\_entry()};
@@ -607,7 +661,7 @@ height=6em]
 	\path (f3)+(0,-1.5em) node (f4) [sstk] {{\tt write()} frame};
 	\path (f0.south)+(0,-1em) node (lbl) {User Stack};
 
-	\path (f0)+(10em,0) node (k0) [stk] {};
+	\path (f0)+(14em,0) node (k0) [stk] {};
 	\path (k0.north)+(0,-1.25em) node (k1) [mstk]
 	{{\tt trap\_common}\\{\em trapframe}};
 	\path (k1)+(0,-2.75em) node (k2) [sstk] {\tt trap\_entry()};
@@ -634,7 +688,7 @@ height=6em]
 	\path (f3)+(0,-1.5em) node (f4) [sstk] {{\tt write()} frame};
 	\path (f0.south)+(0,-1em) node (lbl) {User Stack};
 
-	\path (f0)+(10em,0) node (k0) [stk] {};
+	\path (f0)+(14em,0) node (k0) [stk] {};
 	\path (k0.north)+(0,-1.25em) node (k1) [mstk]
 	{{\tt trap\_common}\\{\em trapframe}};
 	\path (k1)+(0,-2.75em) node (k2) [sstk] {\tt trap\_entry()};
@@ -660,7 +714,7 @@ height=6em]
 	\path (f3)+(0,-1.5em) node (f4) [sstk] {{\tt write()} frame};
 	\path (f0.south)+(0,-1em) node (lbl) {User Stack};
 
-	\path (f0)+(10em,0) node (k0) [stk] {};
+	\path (f0)+(14em,0) node (k0) [stk] {};
 	\path (k0.north)+(0,-1.25em) node (k1) [mstk]
 	{{\tt trap\_common}\\{\em trapframe}};
 	\path (k1)+(0,-2.75em) node (k2) [sstk] {\tt trap\_entry()};
@@ -685,7 +739,7 @@ height=6em]
 	\path (f3)+(0,-1.5em) node (f4) [sstk] {{\tt write()} frame};
 	\path (f0.south)+(0,-1em) node (lbl) {User Stack};
 
-	\path (f0)+(10em,0) node (k0) [stk] {};
+	\path (f0)+(14em,0) node (k0) [stk] {};
 	\path (k0.north)+(0,-1.25em) node (k1) [mstk]
 	{{\tt trap\_common}\\{\em trapframe}};
 	\path (k1)+(0,-2.75em) node (k2) [sstk] {\tt trap\_entry()};
@@ -709,7 +763,7 @@ height=6em]
 	\path (f3)+(0,-1.5em) node (f4) [sstk] {{\tt write()} frame};
 	\path (f0.south)+(0,-1em) node (lbl) {User Stack};
 
-	\path (f0)+(10em,0) node (k0) [stk] {};
+	\path (f0)+(14em,0) node (k0) [stk] {};
 	\path (k0.north)+(0,-1.25em) node (k1) [mstk]
 	{{\tt trap\_common}\\{\em trapframe}};
 	\path (k0.south)+(0,-1em) node (lbl) {Kernel Stack};
@@ -732,7 +786,7 @@ height=6em]
 	\path (f3)+(0,-1.5em) node (f4) [sstk] {{\tt write()} frame};
 	\path (f0.south)+(0,-1em) node (lbl) {User Stack};
 
-	\path (f0)+(10em,0) node (k0) [stk] {};
+	\path (f0)+(14em,0) node (k0) [stk] {};
 	\path (k0.south)+(0,-1em) node (lbl) {Kernel Stack};
 \end{tikzpicture}
 \end{figure}
@@ -752,7 +806,7 @@ height=6em]
 	\path (f2)+(0,-1.5em) node (f3) [sstk] {{\tt printf()} frame};
 	\path (f0.south)+(0,-1em) node (lbl) {User Stack};
 
-	\path (f0)+(10em,0) node (k0) [stk] {};
+	\path (f0)+(14em,0) node (k0) [stk] {};
 	\path (k0.south)+(0,-1em) node (lbl) {Kernel Stack};
 \end{tikzpicture}
 \end{figure}
@@ -848,7 +902,7 @@ height=6em]
 	\path (f1)+(0,-1.5em) node (f2) [sstk] {{\tt main()} frame};
 	\path (f0.south)+(0,-1em) node (lbl) {User Stack};
 
-	\path (f0)+(10em,0) node (k0) [stk] {};
+	\path (f0)+(14em,0) node (k0) [stk] {};
 	\path (k0.north)+(0,-1.25em) node (k1) [mstk]
 	{{\tt trap\_common}\\{\em trapframe}};
 	\path (k0.south)+(0,-1em) node (lbl) {Kernel Stack 1};
@@ -870,7 +924,7 @@ height=6em]
 	\path (f1)+(0,-1.5em) node (f2) [sstk] {{\tt main()} frame};
 	\path (f0.south)+(0,-1em) node (lbl) {User Stack};
 
-	\path (f0)+(10em,0) node (k0) [stk] {};
+	\path (f0)+(14em,0) node (k0) [stk] {};
 	\path (k0.north)+(0,-1.25em) node (k1) [mstk]
 	{{\tt trap\_common}\\{\em trapframe}};
 	\path (k1)+(0,-2.75em) node (k2) [sstk] {\tt Trap\_Entry()};
@@ -891,7 +945,7 @@ height=6em]
 	\path (f1)+(0,-1.5em) node (f2) [sstk] {{\tt main()} frame};
 	\path (f0.south)+(0,-1em) node (lbl) {User Stack};
 
-	\path (f0)+(10em,0) node (k0) [stk] {};
+	\path (f0)+(14em,0) node (k0) [stk] {};
 	\path (k0.north)+(0,-1.25em) node (k1) [mstk]
 	{{\tt trap\_common}\\{\em trapframe}};
 	\path (k1)+(0,-2.75em) node (k2) [sstk] {\tt Trap\_Entry()};
@@ -913,7 +967,7 @@ height=6em]
 	\path (f1)+(0,-1.5em) node (f2) [sstk] {{\tt main()} frame};
 	\path (f0.south)+(0,-1em) node (lbl) {User Stack};
 
-	\path (f0)+(10em,0) node (k0) [stk] {};
+	\path (f0)+(14em,0) node (k0) [stk] {};
 	\path (k0.north)+(0,-1.25em) node (k1) [mstk]
 	{{\tt trap\_common}\\{\em trapframe}};
 	\path (k1)+(0,-2.75em) node (k2) [sstk] {\tt Trap\_Entry()};
@@ -936,7 +990,7 @@ height=6em]
 	\path (f1)+(0,-1.5em) node (f2) [sstk] {{\tt main()} frame};
 	\path (f0.south)+(0,-1em) node (lbl) {User Stack};
 
-	\path (f0)+(10em,0) node (k0) [stk] {};
+	\path (f0)+(14em,0) node (k0) [stk] {};
 	\path (k0.north)+(0,-1.25em) node (k1) [mstk]
 	{{\tt trap\_common}\\{\em trapframe}};
 	\path (k1)+(0,-2.75em) node (k2) [sstk] {\tt Trap\_Entry()};
@@ -959,7 +1013,7 @@ height=6em]
 	\path (f1)+(0,-1.5em) node (f2) [sstk] {{\tt main()} frame};
 	\path (f0.south)+(0,-1em) node (lbl) {User Stack};
 
-	\path (f0)+(10em,0) node (k0) [stk] {};
+	\path (f0)+(14em,0) node (k0) [stk] {};
 	\path (k0.north)+(0,-1.25em) node (k1) [mstk]
 	{{\tt trap\_common}\\{\em trapframe}};
 	\path (k1)+(0,-2.75em) node (k2) [sstk] {\tt Trap\_Entry()};
@@ -984,7 +1038,7 @@ height=6em]
 	\path (f1)+(0,-1.5em) node (f2) [sstk] {{\tt main()} frame};
 	\path (f0.south)+(0,-1em) node (lbl) {User Stack};
 
-	\path (f0)+(10em,0) node (k0) [stk] {};
+	\path (f0)+(14em,0) node (k0) [stk] {};
 	\path (k0.north)+(0,-1.25em) node (k1) [mstk]
 	{{\tt trap\_common}\\{\em trapframe}};
 	\path (k1)+(0,-2.75em) node (k2) [sstk] {\tt Trap\_Entry()};
@@ -1017,7 +1071,7 @@ height=6em]
 	\path (k6)+(0,-2.75em) node (k7) [mstk] {\em switchframe};
 	\path (k0.south)+(0,-1em) node (lbl) {Kernel Stack 1};
 
-	\path (k0)+(10em,0) node (x0) [stk] {};
+	\path (k0)+(14em,0) node (x0) [stk] {};
 	\path (x0.north)+(0,-1.25em) node (x1) [mstk]
 	{{\tt trap\_common}\\{\em trapframe}};
 	\path (x1)+(0,-2.75em) node (x2) [sstk] {\tt Trap\_Entry()};
