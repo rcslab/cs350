@@ -7,8 +7,8 @@
 
 \usetheme{rcstheme}
 
-\subtitle{Lecture 7: Virtual memory HW}
-\topic{Virtual memory HW}
+\subtitle{Lecture 7: Virtual Memory -- Hardware}
+\topic{Virtual memory -- Hardware}
 
 \begin{document}
 
@@ -429,153 +429,438 @@ physical memory
 %% \end{slide}
 
 \begin{slide}{MMU Types}
-  \itms{
-    \item Memory Management Units (MMU) come in two flavors
-    \item Hardware Managed
-    \ittms{
-      \item Hardware reloads TLB with pages from a page tables
-      \item Typically hardware page tables are Radix Trees
-      \item Requires complex hardware
-      \item Examples: x86, ARM64, IBM POWER9+
-    }
-    \item Software Managed
-    \ittms{
-      \item Simplier hardware and asks software to reload pages
-      \item Requires fast exception handling and optimized software
-      \item Enables more flexiblity in the TLB (e.g. variable page sizes)
-      \item Examples: MIPS, Sun SPARC, DEC Alpha, ARM and POWER
-    }
-  }
-  \end{slide}
-  
-  \section{Intel x86: Hardware MMU}
-  
-  \begin{slide}{x86 Paging}
-  \itms{
-    \item Paging enabled by bits in a control register (\texttt{\%cr0})
-    \ittms{
-      \item Only privileged OS code can manipulate control registers
-    }
-    \item Normally 4KB pages
-    \item \texttt{\%cr3}: points to 4KB page directory
-    \item Page directory: 1024 PDEs (page directory entries)
-    \ittms{
-      \item Each contains physical address of a page table
-    }
-    \item Page table: 1024 PTEs (page table entries)
-    \ittms{
-      \item Each contains physical address of virtual 4K page
-      \item Page table covers 4 MB of Virtual mem
-    }
-    \item See intel manual for detailed explanation
-    \ittms{
-      \item Volume 2 of
-        \href{http://developer.amd.com/Resources/documentation/guides/Pages/default.aspx\#manuals}{AMD64 Architecture docs}
-      \item Volume 3A of
-        \href{http://www.intel.com/content/www/us/en/processors/architectures-software-developer-manuals.html}{Intel Pentium Manual}
-    }
-  }
-  \end{slide}
-  
-  \begin{slide}{x86 page translation}
-  \begin{figure}
-  \centering
-  \input{x86.tex}
-  \end{figure}
-  \end{slide}
-  
-  \begin{slide}{x86 page directory entry}
-  \bigskip
-  \begin{figure}
-  \centering
-  \input{pde.tex}
-  \end{figure}
-  \end{slide}
-  
-  \begin{slide}{x86 page table entry}
-  \bigskip
-  \begin{figure}
-  \centering
-  \input{pte.tex}
-  \end{figure}
-  \end{slide}
-  
-  \begin{slide}{x86 hardware segmentation}
-  \itms{
-    \item x86 architecture \emph{also} supports segmentation
-    \ittms{
-      \item Segment register base + pointer val = \emph{linear address}
-      \item Page translation happens on linear addresses
-    }
-    \item Two levels of protection and translation check
-    \ittms{
-      \item Segmentation model has four privilege levels (CPL 0--3)
-      \item Paging only two, so 0--2 = kernel, 3 = user
-    }
-    \item Why do you want \emph{both} paging and segmentation?
-  \pause
-    \item Short answer:  You don't -- just adds overhead
-    \ittms{
-      \item Most OSes use ``flat mode'' -- set base = 0, bounds =
-        0xffffffff \\
-        in all segment registers, then forget about it
-      \item x86-64 architecture removes much segmentation support
-    }
-    \item Long answer:  Has some fringe/incidental uses
-    \ittms{
-      \item VMware runs guest OS in CPL 1 to trap stack faults
-      \item OpenBSD used CS limit for W$\wedge$X when no PTE NX bit
-    }
-  }
-  \end{slide}
-  
-  \begin{slide}{Making paging fast}
-  \itms{
-    \item x86 PTs require 3 memory references per load/store
-    \ittms{
-      \item Look up page table address in page directory
-      \item Look up PPN in page table
-      \item Actually access physical page corresponding to virtual
-    address
-    }
-    \item For speed, CPU caches recently used translations
-    \ittms{
-      \item Called a \emph{translation lookaside buffer} or \Red{TLB}
-      \item Typical: 64-2K entries, 4-way to fully associative, 95\% hit rate
-      \item Each TLB entry maps a VPN $\to$ PPN + protection information
-    }
-    \item On each memory reference
-    \ittms{
-      \item Check TLB, if entry present get physical address fast
-      \item If not, walk page tables, insert in TLB for next time \\
-        (Must evict some entry) 
-    }
-  }
-  \end{slide}
-  
-  \begin{slide}{TLB details}
-  \itms{
-  \item TLB operates at CPU pipeline speed $\rightarrow$ small, fast
-  \item Complication: what to do when switch address space?
+\itms{
+  \item Memory Management Units (MMU) come in two flavors
+  \item Software Managed
   \ittms{
-    \item Flush TLB on context switch (e.g., old x86)
-    \item Tag each entry with associated process's ID (e.g., MIPS)
+    \item Simplier hardware and asks software to reload pages
+    \item Requires fast exception handling and optimized software
+    \item Enables more flexiblity in the TLB (e.g. variable page sizes)
+    \item Examples: MIPS, Sun SPARC, DEC Alpha, ARM and POWER
   }
-  \item In general, OS must manually keep TLB valid
-  \item E.g., x86 \emph{invlpg} instruction
-    \ittms{
-     \item Invalidates a page translation in TLB
-     \item Must execute after changing a possibly used page table entry
-     \item Otherwise, hardware will miss page table change
-    }
-  \item More Complex on a multiprocessor (TLB shootdown)
-  %\item TLB reload can be done to hardware or software
-  %\ittms{
-  %  \item Hardware - x86 walks page tables on miss.
-  %  \item Software - MIPS - trap to OS to reload.
-  %     OS get to decide "page table" format
+  \item Hardware Managed
+  \ittms{
+    \item Hardware reloads TLB with pages from a page tables
+    \item Typically hardware page tables are Radix Trees
+    \item Requires complex hardware
+    \item Examples: x86, ARM64, IBM POWER9+
   }
-  \end{slide}
+}
+\end{slide}
+
+\section{MIPS: Software Managed MMU}
+
+\begin{slide}{Software Managed MMU: MIPS}
+\itms{
+  \item Hardware has 64-entry TLB
+  \ittms{
+    \item References to addresses not in TLB trap to kernel
+  }
+  \item Each TLB entry has the following fields:\\
+    {\mdseries\scriptsize Virtual page, Pid, Page frame, NC, D, V, Global}
+  \item Kernel itself unpaged
+  \ittms{
+    \item All of physical memory contiguously mapped in high VM
+    \item Kernel uses these pseudo-physical addresses
+  }
+  \item User TLB fault hander very efficient
+  \ittms{
+    \item Two hardware registers reserved for it
+    \item utlb miss handler can itself fault---allow paged page tables
+  }
+  \item OS is free to choose page table format!
+  \ittms{
+      \item Combination of hash tables, trees and list of VM regions (next 
+          lecture)
+  }
+}
+\end{slide}
+
+\newcommand{\descbox}[2]{\parbox[c][3.8\baselineskip]{0.95\width}{%
+  \raggedright #1\vfill #2}}
+\newcommand{\memsection}[4]{%
+  % define the height of the memsection
+  \bytefieldsetup{bitheight=#3\baselineskip}%
+  \bitbox[]{10}{%
+    \texttt{#1}%print end address
+    \\
+    % do some spacing
+    \vspace{#3\baselineskip}
+    \vspace{-2\baselineskip}
+    \vspace{-#3pt}
+    \texttt{#2}%print start address
+  }%
+  \bitbox{16}{#4}%    print box with caption
+}
+
+\begin{slide}{MIPS Memory Layout}
+\begin{figure}
+\centering
+\begin{bytefield}{16}
+  \begin{rightwordgroup}{Kernel Memory}
+  \memsection{FFFF FFFF}{C000 0000}{4}{kseg2: Paged Kernel}\\
+  \memsection{BFFF FFFF}{A000 0000}{2}{kseg1: Phys. Uncached}\\
+  \memsection{9FFF FFFF}{8000 0000}{2}{kseg0: Phys. Cached}
+  \end{rightwordgroup}\\
+  \begin{rightwordgroup}{User Memory}
+  \memsection{7FFF FFFF}{0000 0000}{8}{useg: Paged User}
+  \end{rightwordgroup}
+\end{bytefield}
+\end{figure}
+\end{slide}
+
+\begin{slide}{MIPS Translation Lookaside Buffer}
+\itms{
+  \item TLB Entries: 64 - 64-bit entries containing:
+  \ittms{
+  \item PID: Process ID (tagged TLB)
+  \item N: No Cache - disables caching for memory mapped I/O
+  \item D: Writeable - makes the page writeable
+  \item V: Valid
+  \item G: Global - ignores the PID during lookups
+  }
+}
+\vspace{1em}
+\begin{bytefield}[endianness=big,bitwidth=0.9em]{64}
+  \bitheader{32-63} \\
+  \bitbox{20}{Frame Number (VPN)} &
+  \bitbox{6}{PID} &
+  \bitbox{6}{} \\
+\end{bytefield}
+\begin{bytefield}[endianness=big,bitwidth=0.9em]{32}
+  \bitheader{0-31} \\
+  \bitbox{20}{Physical Page Number (PPN)} &
+  \bitbox{1}{N}
+  \bitbox{1}{D}
+  \bitbox{1}{V}
+  \bitbox{1}{G}
+  \bitbox{8}{} \\
+\end{bytefield}
+\vspace{-1em}
+\itms{
+  \item Page Sizes: Multiples of 4 from 4~kiB--16~MiB
+  \ittms{
+    \item 4~kiB, 16~kiB, 64~kiB, 256~kiB, 1~MiB, 4~MiB, 16~MiB
+  }
+}
+\end{slide}
+
+\begin{slide}{TLB PID and Global Bit}
+\itms{
+  \item Process ID (PID) allows multiple processes to coexist
+  \ittms{
+    \item We don't need to flush the TLB on context switch
+    \item By setting the process ID 
+    \item Only flush TLB entries when reusing a PID
+    \item Current PID is stored in {\tt c0\_entryhi}
+  }
+  \medskip
+  \item Global bit
+  \ittms{
+    \item Used for pages shared across all address spaces in kseg2 or useg
+    \item Ensures the TLB ignores the PID field
+    \item Typically in most hardware a TLB flush doesn't flush global pages
+  }
+}
+\end{slide}
+
+\begin{slide}{TLB Instructions}
+\itms{
+  \item MIPS co-processor 0 (COP0) provides the TLB functionality
+  \ittms{
+    \item COP0 provides most privileged functionality
+  }
+  \medskip
+  \item Four instructions:
+  \ittms{
+    \item {\tt tlbwr}: TLB write a random slot
+    \item {\tt tlbwi}: TLB write a specific slot
+    \item {\tt tlbr}: TLB read a specific slot
+    \item {\tt tlbp}: Probe the slot containing an address
+  }
+  \medskip
+  \item For each of these instructions you must load the following registers
+  \ittms{
+    \item {\tt c0\_entryhi}: high bits of TLB entry
+    \item {\tt c0\_entrylo}: low bits of TLB entry
+    \item {\tt c0\_index}: TLB Index
+  }
+}
+\end{slide}
+
+\begin{slide}{Hardware Lookup Exceptions}
+\itms{
+  \item TLB Exceptions:
+  \ittms{
+    \item UTLB Miss: Generated when the accessing useg without matching TLB 
+      entry
+    \item TLB Miss: Generated when the accessing kseg2 without matching entry
+    \item TLB Mod: Generated when writing to read-only page
+  }
+  \medskip
+  \item UTLB handler is seperate from general exception handler
+  \ittms{
+    \item UTLBs are very frequent and require a hand optimized path
+    \item 64 entry TLB with 4~kiB pages covers 256~kiB of memory
+    \item Modern machines have workloads with far more memory
+    \item Require more entries (expensive hardware) or larger pages
+  }
+}
+\end{slide}
+  
+\begin{slide}{Hardware Lookup Algorithm}
+\begin{enumerate}
+    \item If most significant bit (MSB) is 1 and in user mode $\rightarrow$ 
+	address error exception
+    \item If no VPN match $\rightarrow$ TLB/UTLB miss exception
+    \item If PID mismatches and global bit not set $\rightarrow$ TLB/UTLB miss 
+    \item If valid bit not set $\rightarrow$ TLB/UTLB miss
+    \item Write to read-only page $\rightarrow$ TLB mod(ification) exception
+    \item If N bit is set directly access device memory (disable cache)
+\end{enumerate}
+\end{slide}
+  
+%\begin{slide}{DEC Alpha MMU}
+%\itms{
+%  \item Software managed TLB (like MIPS)
+%  \ittms{
+%    \item 8KB, 64KB, 512KB, 4MB pages all available
+%    \item TLB supports 128 instruction/128 data entries of any size
+%  }
+%  \item But TLB miss handler not part of OS
+%  \ittms{
+%    \item Processor ships with special ``PAL code'' in ROM
+%    \item Processor-specific, but provides uniform interface to OS
+%    \item Basically firmware that runs from main memory like OS
+%  }
+%  \item Various events vector directly to PAL code
+%  \ittms{
+%    \item \texttt{call\_pal} instruction, TLB miss/fault, FP disabled
+%  }
+%  \item PAL code runs in special privileged processor mode
+%  \ittms{
+%    \item Interrupts always disabled
+%    \item Have access to special instructions and registers
+%  }
+%}
+%\end{slide}
+%
+%\begin{slide}{PAL code interface details}
+%\itms{
+%  \item Examples of Digital Unix PALcode entry functions
+%  \ittms{
+%    \item \texttt{callsys}/\texttt{retsys} - make, return from system call
+%    \item \texttt{swpctx} - change address spaces
+%    \item \texttt{wrvptptr} - write virtual page table pointer
+%    \item \texttt{tbi} - TBL invalidate
+%  }
+%  \item Some fields in PALcode page table entries
+%  \ittms{
+%    \item GH - 2-bit granularity hint $\to 2^N$ pages have same translation
+%    \item ASM - address space match $\to$ mapping applies in all processes
+%  }
+%}
+%\end{slide}
+%
+%\begin{slide}{Example:  Paging to disk}
+%\itms{
+%  \item \texttt{gcc} needs a new page of memory
+%  \item OS re-claims an idle page from \texttt{emacs}
+%  \item If page is \emph{clean} (i.e., also stored on disk):
+%  \ittms{
+%    \item E.g., page of text from emacs binary on disk
+%    \item Can always re-read same page from binary
+%    \item So okay to discard contents now \& give page to \texttt{gcc}
+%  }
+%  \item If page is \emph{dirty} (meaning memory is only copy)
+%  \ittms{
+%    \item Must write page to disk first before giving to \texttt{gcc}
+%  }
+%  \item Either way:
+%  \ittms{
+%    \item Mark page invalid in \texttt{emacs}
+%    \item \texttt{emacs} will fault on next access to virtual page
+%    \item On fault, OS reads page data back from disk into new page, maps
+%  new page into \texttt{emacs}, resumes executing
+%  }
+%}
+%\end{slide}
+  
+\section{Intel x86: Hardware MMU}
+
+\begin{slide}{Hardware Managed MMU: x86}
+\itms{
+  \item TLB Managed by Hardware and Microcode
+  \ittms{
+    \item Two levels of TLBs each acting as a cache
+    \item Typical: a 1K entry TLB and 512 entry TLB
+    \item TLB acts as a cache page table structure
+    \item TLB automatically reloaded from page table
+    \item Missing in the page tables result in page faults
+  }
+  \item OS builds a Radix-tree describing memory layout
+  \ittms{
+    \item Control register \texttt{\%cr3} points to radix-tree root
+  }
+  \item 32-bit mode uses two level radix tree
+  \ittms{
+    \item 1024 entries per level with page sizes 4~KiB or 4~MiB
+  }
+  \item 64-bit mode
+  \ittms{
+    \item 512 entries per level with page sizes of 4~KiB, 2~MiB, 1~GiB
+    \item Four levels by default, newer chips support 5 levels
+  }
+}
+\end{slide}
+
+\begin{slide}{x86 Paging}
+\itms{
+  \item Paging enabled by bits in a control register (\texttt{\%cr0})
+  \ittms{
+    \item Only privileged OS code can manipulate control registers
+  }
+  \item Normally 4KB pages
+  \item \texttt{\%cr3}: points to 4KB page directory
+  \item Page directory: 1024 PDEs (page directory entries)
+  \ittms{
+    \item Each contains physical address of a page table
+  }
+  \item Page table: 1024 PTEs (page table entries)
+  \ittms{
+    \item Each contains physical address of virtual 4K page
+    \item Page table covers 4 MB of Virtual mem
+  }
+  \item See intel manual for detailed explanation
+  \ittms{
+    \item Volume 2 of
+      \href{http://developer.amd.com/Resources/documentation/guides/Pages/default.aspx\#manuals}{AMD64 Architecture docs}
+    \item Volume 3A of
+      \href{http://www.intel.com/content/www/us/en/processors/architectures-software-developer-manuals.html}{Intel Pentium Manual}
+  }
+}
+\end{slide}
+
+\begin{slide}{x86 Page Translation}
+\begin{figure}
+\centering
+\input{x86.tex}
+\end{figure}
+\end{slide}
+
+\begin{slide}{x86 Page Directory Entry}
+\bigskip
+\begin{figure}
+\centering
+\includegraphics{pde.pdf}
+\end{figure}
+\end{slide}
+
+\begin{slide}{x86 Page Table Entry}
+\bigskip
+\begin{figure}
+\centering
+\includegraphics{pte.pdf}
+\end{figure}
+\end{slide}
+
+\begin{slide}{x86 Hardware Segmentation}
+\itms{
+  \item x86 architecture \emph{also} supports segmentation
+  \ittms{
+    \item Segment register base + pointer val = \emph{linear address}
+    \item Page translation happens on linear addresses
+  }
+  \item Two levels of protection and translation check
+  \ittms{
+    \item Segmentation model has four privilege levels (CPL 0--3)
+    \item Paging only two, so 0--2 = kernel, 3 = user
+  }
+  \item Implementation Details
+  \ittms{
+    \item Segments defined through descriptors (similar IDTs)
+    \item Two descriptor tables: GDT (global) and LDT (local --  usually per 
+	process)
+    \item Bonus: TSS used by interrupts is also a descriptor in the GDT
+    \item Segment registers: \texttt{\%cs} (code), \texttt{\%ds} (data), 
+	\texttt{\%ss} (stack), \texttt{\%fs}/\texttt{\%gs} (cpu/thread local 
+	data)
+  }
+  \item x86-64 keeps segmentation offsets for \texttt{\%fs}/\texttt{\%gs}
+  \ittms{
+    \item Early AMD64's kept segmentation for virtualization
+    \item Now: Offset set using model specific registers 
+	\code{MSR_FSBASE}/\code{MSR_GSBASE}
+  }
+}
+\end{slide}
+
+\begin{slide}{Why have segmentation and paging?}
+\itms{
+  \item Why do you want \emph{both} paging and segmentation?
+\pause
+  \item Short answer:  You don't -- just adds overhead
+  \ittms{
+    \item Most OSes use ``flat mode'' -- set base = 0, bounds =
+      0xffffffff \\
+      in all segment registers, then forget about it
+    \item x86-64 architecture removes much segmentation support
+  }
+  \item Long answer:  Has some fringe/incidental uses
+  \ittms{
+    \item VMware runs guest OS in CPL 1 to trap stack faults
+    \item OpenBSD used CS limit for W$\wedge$X when no PTE NX bit
+  }
+}
+\end{slide}
+
+\begin{slide}{Making Paging Fast}
+\itms{
+  \item x86 PTs require 3 memory references per load/store
+  \ittms{
+    \item Look up page table address in page directory
+    \item Look up PPN in page table
+    \item Actually access physical page corresponding to virtual
+  address
+  }
+  \item For speed, CPU caches recently used translations
+  \ittms{
+    \item Called a \emph{translation lookaside buffer} or \Red{TLB}
+    \item Typical: 64-2K entries, 4-way to fully associative, 95\% hit rate
+    \item Each TLB entry maps a VPN $\to$ PPN + protection information
+  }
+  \item On each memory reference
+  \ittms{
+    \item Check TLB, if entry present get physical address fast
+    \item If not, walk page tables, insert in TLB for next time \\
+      (Must evict some entry) 
+  }
+}
+\end{slide}
+
+\begin{slide}{TLB details}
+\itms{
+\item TLB operates at CPU pipeline speed $\rightarrow$ small, fast
+\item Complication: what to do when switch address space?
+\ittms{
+  \item Flush TLB on context switch (e.g., old x86)
+  \item Tag each entry with associated process's ID (e.g., MIPS)
+}
+\item In general, OS must manually keep TLB valid
+\item E.g., x86 \emph{invlpg} instruction
+  \ittms{
+   \item Invalidates a page translation in TLB
+   \item Must execute after changing a possibly used page table entry
+   \item Otherwise, hardware will miss page table change
+  }
+\item More Complex on a multiprocessor (TLB shootdown)
+%\item TLB reload can be done to hardware or software
+%\ittms{
+%  \item Hardware - x86 walks page tables on miss.
+%  \item Software - MIPS - trap to OS to reload.
+%     OS get to decide "page table" format
+}
+\end{slide}
   
 %  \begin{slide}{x86 Paging Extensions}
 %  \itms{
@@ -607,301 +892,46 @@ physical memory
 %  % }
 %  \end{slide}
   
-  \begin{slide}{Where does the OS live?}
-  \itms{
-    \item In its own address space?
-    \ittms{
-      \item Can't do this on most hardware
-             (e.g., syscall instruction won't switch address spaces)
-      \item Also would make it harder to parse syscall arguments passed
-    as pointers
-    }
-    \item So in the same address space as process
-    \ittms{
-      \item Use protection bits to prohibit user code from writing
-    kernel
-    }
-    \item Typically
-      all kernel text, most data at same VA in every address space
-    \ittms{
-      \item On x86, must manually set up page tables for this
-      \item Usually just map kernel in contiguous virtual memory when
-    boot loader puts kernel into contiguous physical memory
-      \item Some hardware puts physical memory (kernel-only) somewhere in virtual
-    address space
-    }
+\begin{slide}{Where does the OS live?}
+\itms{
+  \item In its own address space?
+  \ittms{
+    \item Can't do this on most hardware
+           (e.g., syscall instruction won't switch address spaces)
+    \item Also would make it harder to parse syscall arguments passed
+  as pointers
   }
-  \end{slide}
-  
-  \section{MIPS: Software Managed MMU}
-  
-  \begin{slide}{Very different MMU: MIPS}
-  \itms{
-    \item Hardware has 64-entry TLB
-    \ittms{
-      \item References to addresses not in TLB trap to kernel
-    }
-    \item Each TLB entry has the following fields:\\
-      {\mdseries\scriptsize Virtual page, Pid, Page frame, NC, D, V, Global}
-    \item Kernel itself unpaged
-    \ittms{
-      \item All of physical memory contiguously mapped in high VM
-      \item Kernel uses these pseudo-physical addresses
-    }
-    \item User TLB fault hander very efficient
-    \ittms{
-      \item Two hardware registers reserved for it
-      \item utlb miss handler can itself fault---allow paged page tables
-    }
-    \item OS is free to choose page table format!
+  \item So in the same address space as process
+  \ittms{
+    \item Use protection bits to prohibit user code from writing
+  kernel
   }
-  \end{slide}
-  
-  \newcommand{\descbox}[2]{\parbox[c][3.8\baselineskip]{0.95\width}{%
-    \raggedright #1\vfill #2}}
-  \newcommand{\memsection}[4]{%
-    % define the height of the memsection
-    \bytefieldsetup{bitheight=#3\baselineskip}%
-    \bitbox[]{10}{%
-      \texttt{#1}%print end address
-      \\
-      % do some spacing
-      \vspace{#3\baselineskip}
-      \vspace{-2\baselineskip}
-      \vspace{-#3pt}
-      \texttt{#2}%print start address
-    }%
-    \bitbox{16}{#4}%    print box with caption
+  \item Typically
+    all kernel text, most data at same VA in every address space
+  \ittms{
+    \item On x86, must manually set up page tables for this
+    \item Usually just map kernel in contiguous virtual memory when
+  boot loader puts kernel into contiguous physical memory
+    \item Some hardware puts physical memory (kernel-only) somewhere in virtual
+  address space
   }
-  
-  \begin{slide}{MIPS Memory Layout}
-  \begin{bytefield}{16}
-    \begin{rightwordgroup}{Kernel Memory}
-    \memsection{FFFF FFFF}{C000 0000}{4}{kseg2: Paged Kernel}\\
-    \memsection{BFFF FFFF}{A000 0000}{2}{kseg1: Phys. Uncached}\\
-    \memsection{9FFF FFFF}{8000 0000}{2}{kseg0: Phys. Cached}
-    \end{rightwordgroup}\\
-    \begin{rightwordgroup}{User Memory}
-    \memsection{7FFF FFFF}{0000 0000}{8}{useg: Paged User}
-    \end{rightwordgroup}
-  \end{bytefield}
-  \end{slide}
-  
-  \begin{slide}{MIPS Translation Lookaside Buffer}
-  \itms{
-    \item TLB Entries: 64 - 64-bit entries containing:
-    \ittms{
-    \item PID: Process ID (tagged TLB)
-    \item N: No Cache - disables caching for memory mapped I/O
-    \item D: Writeable - makes the page writeable
-    \item V: Valid
-    \item G: Global - ignores the PID during lookups
-    }
+}
+\end{slide}
+
+\begin{slide}{Paging in day-to-day use}
+\itms{
+  \item Paging Examples
+  \ittms{
+  \item Demand paging
+  \item Growing the stack
+  \item BSS page allocation
+  \item Shared text
+  \item Shared libraries
+  \item Shared memory
+  \item Copy-on-write (\texttt{fork}, \texttt{mmap}, etc.)
   }
-  \vspace{1em}
-  \begin{bytefield}[endianness=big,bitwidth=0.9em]{64}
-    \bitheader{32-63} \\
-    \bitbox{20}{Frame Number (VPN)} &
-    \bitbox{6}{PID} &
-    \bitbox{6}{} \\
-  \end{bytefield}
-  \begin{bytefield}[endianness=big,bitwidth=0.9em]{32}
-    \bitheader{0-31} \\
-    \bitbox{20}{Physical Page Number (PPN)} &
-    \bitbox{1}{N}
-    \bitbox{1}{D}
-    \bitbox{1}{V}
-    \bitbox{1}{G}
-    \bitbox{8}{} \\
-  \end{bytefield}
-  \vspace{-1em}
-  \itms{
-    \item Page Sizes: Multiples of 4 from 4~kiB--16~MiB
-    \ittms{
-      \item 4~kiB, 16~kiB, 64~kiB, 256~kiB, 1~MiB, 4~MiB, 16~MiB
-    }
-  }
-  \end{slide}
-  
-  \begin{slide}{TLB PID and Global Bit}
-  \itms{
-    \item Process ID (PID) allows multiple processes to coexist
-    \ittms{
-      \item We don't need to flush the TLB on context switch
-      \item By setting the process ID 
-      \item Only flush TLB entries when reusing a PID
-      \item Current PID is stored in {\tt c0\_entryhi}
-    }
-    \medskip
-    \item Global bit
-    \ittms{
-      \item Used for pages shared across all address spaces in kseg2 or useg
-      \item Ensures the TLB ignores the PID field
-      \item Typically in most hardware a TLB flush doesn't flush global pages
-    }
-  }
-  \end{slide}
-  
-  \begin{slide}{TLB Instructions}
-  \itms{
-    \item MIPS co-processor 0 (COP0) provides the TLB functionality
-    \medskip
-    \item Four instructions:
-    \ittms{
-      \item {\tt tlbwr}: TLB write a random slot
-      \item {\tt tlbwi}: TLB write a specific slot
-      \item {\tt tlbr}: TLB read a specific slot
-      \item {\tt tlbp}: Probe the slot containing an address
-    }
-    \medskip
-    \item For each of these instructions you must load the following registers
-    \ittms{
-      \item {\tt c0\_entryhi}: high bits of TLB entry
-      \item {\tt c0\_entrylo}: low bits of TLB entry
-      \item {\tt c0\_index}: TLB Index
-    }
-  }
-  \end{slide}
-  
-  \begin{slide}{Hardware Lookup Exceptions}
-  \itms{
-    \item TLB Exceptions:
-    \ittms{
-      \item UTLB Miss: Generated when the accessing useg without matching TLB 
-        entry
-      \item TLB Miss: Generated when the accessing kseg2 without matching entry
-      \item TLB Mod: Generated when writing to read-only page
-    }
-    \medskip
-    \item UTLB handler is seperate from general exception handler
-    \ittms{
-      \item UTLBs are very frequent and require a hand optimized path
-      \item 64 entry TLB with 4~kiB pages covers 256~kiB of memory
-      \item Modern machines have workloads with far more memory
-      \item Require more entries (expensive hardware) or larger pages
-    }
-  }
-  \end{slide}
-  
-  \begin{slide}{Hardware Lookup Algorithm}
-  \itms{
-  \item If most significant bit (MSB) is 1 and in user mode $\rightarrow$ address 
-    error exception.
-    \item If no VPN match $\rightarrow$ TLB miss exception if MSB is 1, otherwise 
-      UTLB miss.
-    \item If PID mismatches and global bit not set $\rightarrow$ generate a TLB 
-      miss or UTLB miss.
-    \item If valid bit not set $\rightarrow$ TLB miss.
-    \item Write to read-only page $\rightarrow$ TLB mod exception.
-    \item If N bit is set directly access device memory (disable cache)
-  }
-  \end{slide}
-  
-  \begin{slide}{OS/161 Assembly Wrappers}
-  \itms{
-    \item {\tt tlb\_random}: Write random TLB entry
-    \item {\tt tlb\_write}: Write specific TLB entry
-    \item {\tt tlb\_read}: Read specific TLB entry
-    \item {\tt tlb\_probe}: Lookup TLB entry
-    \item Currently the OS implements segments using paging hardware
-    \item In a later assignment you will implement a Radix tree (like x86)
-  }
-  \end{slide}
-  
-  \begin{slide}{OS/161 Memory Layout}
-  \itms{
-    \item Example Memory Layout: user/testbin/sort
-  }
-  \begin{bytefield}{15}
-    \memsection{7FFF FFFF}{xxxx xxxx}{2}{Stack}\\
-    \memsection{}{}{6}{}\\
-    \memsection{1012 00B0}{1000 0000}{2}{Data}\\
-    \memsection{}{}{2}{}\\
-    \memsection{0040 1A0C}{0040 0000}{2}{Text + R/O Data}\\
-    \memsection{}{}{1}{}\\
-  \end{bytefield}
-  \end{slide}
-  
-  %\begin{slide}{DEC Alpha MMU}
-  %\itms{
-  %  \item Software managed TLB (like MIPS)
-  %  \ittms{
-  %    \item 8KB, 64KB, 512KB, 4MB pages all available
-  %    \item TLB supports 128 instruction/128 data entries of any size
-  %  }
-  %  \item But TLB miss handler not part of OS
-  %  \ittms{
-  %    \item Processor ships with special ``PAL code'' in ROM
-  %    \item Processor-specific, but provides uniform interface to OS
-  %    \item Basically firmware that runs from main memory like OS
-  %  }
-  %  \item Various events vector directly to PAL code
-  %  \ittms{
-  %    \item \texttt{call\_pal} instruction, TLB miss/fault, FP disabled
-  %  }
-  %  \item PAL code runs in special privileged processor mode
-  %  \ittms{
-  %    \item Interrupts always disabled
-  %    \item Have access to special instructions and registers
-  %  }
-  %}
-  %\end{slide}
-  %
-  %\begin{slide}{PAL code interface details}
-  %\itms{
-  %  \item Examples of Digital Unix PALcode entry functions
-  %  \ittms{
-  %    \item \texttt{callsys}/\texttt{retsys} - make, return from system call
-  %    \item \texttt{swpctx} - change address spaces
-  %    \item \texttt{wrvptptr} - write virtual page table pointer
-  %    \item \texttt{tbi} - TBL invalidate
-  %  }
-  %  \item Some fields in PALcode page table entries
-  %  \ittms{
-  %    \item GH - 2-bit granularity hint $\to 2^N$ pages have same translation
-  %    \item ASM - address space match $\to$ mapping applies in all processes
-  %  }
-  %}
-  %\end{slide}
-  %
-  %\begin{slide}{Example:  Paging to disk}
-  %\itms{
-  %  \item \texttt{gcc} needs a new page of memory
-  %  \item OS re-claims an idle page from \texttt{emacs}
-  %  \item If page is \emph{clean} (i.e., also stored on disk):
-  %  \ittms{
-  %    \item E.g., page of text from emacs binary on disk
-  %    \item Can always re-read same page from binary
-  %    \item So okay to discard contents now \& give page to \texttt{gcc}
-  %  }
-  %  \item If page is \emph{dirty} (meaning memory is only copy)
-  %  \ittms{
-  %    \item Must write page to disk first before giving to \texttt{gcc}
-  %  }
-  %  \item Either way:
-  %  \ittms{
-  %    \item Mark page invalid in \texttt{emacs}
-  %    \item \texttt{emacs} will fault on next access to virtual page
-  %    \item On fault, OS reads page data back from disk into new page, maps
-  %  new page into \texttt{emacs}, resumes executing
-  %  }
-  %}
-  %\end{slide}
-  
-  \begin{slide}{Paging in day-to-day use}
-  \itms{
-    \item Paging Examples
-    \ittms{
-    \item Demand paging
-    \item Growing the stack
-    \item BSS page allocation
-    \item Shared text
-    \item Shared libraries
-    \item Shared memory
-    \item Copy-on-write (\texttt{fork}, \texttt{mmap}, etc.)
-    }
-    \item Next time: detailed discussion on operating system side
-  }
-  \end{slide}
+  \item Next time: detailed discussion on operating system side
+}
+\end{slide}
 
 \end{document}
