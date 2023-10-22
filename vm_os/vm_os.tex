@@ -7,8 +7,8 @@
 
 \usetheme{rcstheme}
 
-\subtitle{Lecture 8: Virtual Memory OS}
-\topic{Virtual memory OS}
+\subtitle{Lecture 8: Virtual Memory -- Operating System}
+\topic{Virtual Memory -- Operating System}
 
 \usetikzlibrary{arrows, calc, shapes.geometric, shapes.misc,
     fit, chains, intersections, backgrounds, positioning}
@@ -909,11 +909,11 @@
   \ittms{
     \item Memory regions between breakpoint \& stack fault on access
   }
-  \item \texttt{char *brk (const char *addr);}
+  \item \texttt{char *brk(const char *addr);}
   \ittms{
     \item Set and return new value of breakpoint
   }
-  \item \texttt{char *sbrk (int incr);}
+  \item \texttt{char *sbrk(int incr);}
   \ittms{
     \item Increment value of the breakpoint \& return old value
   }
@@ -960,45 +960,45 @@
 
 \begin{slide}{\texttt{mmap} system call}
 \itms{
-  \item \texttt{void *mmap (void *addr, size\_t len, int prot,\hfill\break
-                \hbox{}\qquad\qquad\qquad int flags, int fd, off\_t offset)}
+  \item \code{void *}\man{mmap}\code{(void *addr, size_t len, int prot,}\\
+      \hspace{6.6em}\code{int flags, int fd, off_t offset)}
   \ittms{
-    \item Map file specified by \texttt{fd} at virtual address \texttt{addr}
-    \item If \texttt{addr} is \textsc{null}, let kernel choose the address
+    \item Map file specified by \code{fd} at virtual address \code{addr}
+    \item If \code{addr} is \code{NULL}, let kernel choose the address
   }
   \item \texttt{prot} -- protection of region
   \ittms{
-    \item OR of \textsc{prot\_exec}, \textsc{prot\_read},
-      \textsc{prot\_write}, \textsc{prot\_none}
+    \item Bitwise-or of \code{PROT_EXEC}, \code{PROT_READ},
+	\code{PROT_WRITE}, \code{PROT_NONE}
   }
   \item \texttt{flags}
   \ittms{
-    \item \textsc{map\_anon} -- anonymous memory (\texttt{fd} should be -1)
-    \item \textsc{map\_private} -- modifications are private
-    \item \textsc{map\_shared} -- modifications seen by everyone
+    \item \code{MAP_ANON} -- anonymous memory (\texttt{fd} should be -1)
+    \item \code{MAP_PRIVATE} -- modifications are private
+    \item \code{MAP_SHARED} -- modifications seen by everyone
   }
 } 
 \end{slide}
 
 \begin{slide}{More VM system calls}
 \itms{
-  \item \texttt{int munmap(void *addr, size\_t len)}
+  \item \code{int }\man{munmap}\code{(void *addr, size_t len)}
   \ittms{
     \item Removes memory-mapped object
   }
-  \item \texttt{int mprotect(void *addr, size\_t len, int prot)}
+  \item \code{int }\man{mprotect}\code{(void *addr, size_t len, int prot)}
   \ittms{
     \item Changes protection on pages to or of \texttt{PROT\_}\ldots
   }
-  \item \texttt{int msync(void *addr, size\_t len, int flags);}
+  \item \code{int }\man{msync}\code{(void *addr, size_t len, int flags);}
   \ittms{
     \item Flush changes of mmapped file to backing store
   }
-  \item \texttt{int mincore(void *addr, size\_t len, char *vec)}
+  \item \code{int }\man{mincore}\code{(void *addr, size_t len, char *vec)}
   \ittms{
     \item Returns in \texttt{vec} which pages present
   }
-  \item \texttt{int madvise(void *addr, size\_t len, int behav)}
+  \item \code{int }\man{madvise}\code{(void *addr, size_t len, int behav)}
   \ittms{
     \item Advise the OS on memory use
   }
@@ -1016,8 +1016,8 @@
     int sa_flags;
   };
 
-  int sigaction (int sig, const struct sigaction *act,
-                 struct sigaction *oact)
+  int sigaction(int sig, const struct sigaction *act,
+                struct sigaction *oact)
 \end{ccode}
 \itms{
   \item Can specify function to run on \texttt{SIGSEGV} \\
@@ -1051,7 +1051,7 @@ struct  sigcontext {
 
 \begin{slide}{VM tricks at user level}
 \itms{
-  \item Combination of \texttt{mprotect}/\texttt{sigaction} very powerful
+  \item Combination of \man{mprotect}/\man{sigaction} very powerful
   \ittms{
     \item Can use OS VM tricks in user-level programs
       \cref{readings/vmpup.pdf}{[Appel]}
