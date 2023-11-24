@@ -30,7 +30,7 @@
 
 \section{FFS in more detail}
 
-\begin{slide}{Review:  FFS background}
+\begin{slide}{Review: FFS background}
 \itms{
   \item 1980s improvement to original Unix FS, which had:
   \ittms{
@@ -55,8 +55,8 @@
 \end{slide}
 
 
-\begin{slide}{Review:  FFS
-    \cref{sched/readings/ffs.pdf}{[McKusic]}
+\begin{slide}{Review: FFS
+    \cref{readings/ffs.pdf}{[McKusic]}
         basics}
 \itms{
   \item Change block size to at least 4K
@@ -378,7 +378,7 @@
 \itms{
   \item Want to avoid crashing after ``bad'' subset of writes \\
   \item Must follow 3 rules in ordering updates
-    \cref{sched/readings/softupdates.pdf}{[Ganger]}:
+    \cref{readings/softupdates.pdf}{[Ganger]}:
   \ittms{
     \item[1.] Never write pointer before initializing the structure it
     points to 
@@ -519,7 +519,7 @@
     \item Block that always has dependency will never get written back
   }
   \item Solution:  \emph{Soft updates}
-    \cref{sched/readings/softupdates.pdf}{[Ganger]}
+    \cref{readings/softupdates.pdf}{[Ganger]}
   \ittms{
     \item Write blocks in any order
     \item But keep track of dependencies
@@ -847,7 +847,7 @@
 \end{slide}
 
 \begin{slide}{Case study: XFS
-    \cref{sched/readings/xfs.pdf}{[Sweeney]}}
+    \cref{readings/xfs.pdf}{[Sweeney]}}
 \itms{
   \item Main idea:  Think big
   \ittms{
