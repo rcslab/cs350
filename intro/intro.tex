@@ -24,16 +24,13 @@ height=2em]
 
 \maketitle
 
+\section{Administrative}
+
 \begin{slide}{Administrivia}
 \itms{
-  \item Class web page: \url{https://cs.uwaterloo.ca/cs350/}
+  \item Class web page: \url{https://student.cs.uwaterloo.ca/~cs350/}
   \ittms{
-    \item All assignments and handouts
-  }
-  \gap
-  \item My web page: \url{https://rcs.uwaterloo.ca/~ali/}
-  \ittms{
-    \item Lecture notes
+    \item All assignments, lecture notes and handouts
   }
   \gap
   \item Textbooks
@@ -49,14 +46,64 @@ height=2em]
 \begin{slide}{Administrivia Continued}
 \itms{
   \item Q\&A through Piazza (see class website)
+  \item Assignment help primarily through Office hours
   \gap
-  \item Midterm is scheduled for November 1, 2023
+  \item Midterm is scheduled for October 30, 2024
   \item Final will be announced later
   \gap
   \item Four projects due throughout term
-  \item Two reading assignments
+  \item One extra credit reading assignment
 }
 \end{slide}
+
+\begin{slide}{Improvements and Changes to the Material}
+\itms{
+\item Slides and course content changes
+\ittms{
+    \item Removing some examples and details
+    \item Expanding the slides where we think students struggled the most
+}
+\gap
+\item Assignment documents and code have been updated.
+\ittms{
+    \item Numerous improvements to the code
+    \item Improve the compatability across different build environments
+    \item Improved write-ups (will be released next week)
+}
+\gap
+\item Expanding the in-class assignments
+\ittms{
+    \item Designed to make the ideas from lecture more concrete
+    \item Solutions will not be provided outside of lecture
+}
+}
+\end{slide}
+
+\begin{slide}{How to do well in CS350}
+\itms{
+\item Attend lecture
+    \ittms{
+    \item Course notes are updated every term
+    \item You are responsible for this terms course material
+    \item Watching videos from older terms {\bf is not} a substitute
+    }
+\item Complete the assignments:
+    \ittms{
+    \item {\em Read} the assignments in detail
+    \item Complete the assignments
+    \item Ask yourself if you understand what your doing? (Good piazza 
+	discussion!)
+    \item Usually we test material from the assignments!
+    }
+\item Complete the reading assignments:
+    \ittms{
+    \item Reading assignments are a great resource
+    \item Both texts can expand and clarify topics
+    }
+}
+\end{slide}
+
+\section{Why study operating systems?}
 
 \begin{slide}{Course Goals: Introduce you to Systems}
 \itms{
@@ -72,11 +119,25 @@ height=2em]
 }
 \end{slide}
 
+\begin{slide}{Course Goals: A Computer Systems Way of Thinking}
+\itms{
+\item Make sense of complex software
+\ittms{
+    \item Think in terms of the whole system or major components
+    \item Analyze the properties of the whole system
+}
+\gap
+\item Practical tools for designing and improving software
+\gap
+\item Practical prinicples for designing and improving software
+}
+\end{slide}
+
 \begin{slide}{Course Goals: Practical Understanding of OSes}
 \itms{
   \item Introduce you to operating systems
   \ittms{
-    \item Every computer, phone and watch runs an OS
+    \item Every computer, phone and smart watch runs an OS
     \item Makes you a more effective programmer
     \item How the OS affects your software
   }
@@ -156,6 +217,8 @@ height=2em]
 }
 \end{slide}
 
+\section{Course overview}
+
 \begin{slide}{Course topics}
 \itms{
   \item Threads \& Processes
@@ -168,12 +231,11 @@ height=2em]
   \item Virtual machines
   \item Will often use Unix as the example
   \ittms{
-    \item Most OSes heavily influenced by Unix (e.g. OS161)
+    \item Most OSes heavily influenced by Unix (including the assignment)
     \item Windows is a notable exception
   }
 }
 \end{slide}
-
 
 \begin{slide}{Primitive Operating Systems}
 \itms{
@@ -317,6 +379,7 @@ height=2em]
 }
 \end{frame}
 
+\iffalse
 \begin{slide}{System calls}
 \centerline{\includegraphics[height=2.3in]{figs/syscall}}
 \itms{
@@ -362,6 +425,7 @@ height=2em]
   }
 }
 \end{slide}
+\fi
 
 \iffalse
 
