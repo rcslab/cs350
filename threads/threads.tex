@@ -189,55 +189,6 @@ height=2em]
 }
 \end{slide}
 
-% \begin{slide}{Example user threads implementation}
-% \itms{
-%   \item Per-thread state in thread control block structure
-% }
-% {%
-% \begin{ccode}
-%     typedef struct tcb {
-%       uintptr_t long md_esp;    /* Stack pointer of thread */
-%       char *t_stack;            /* Bottom of thread's stack */
-%       /* ... */
-%     };  
-% \end{ccode}}
-% \itms{
-%   \item Machine-dependent thread-switch function:
-%   \ittms{
-%     \item \normalsize\texttt{void thread\_md\_switch (tcb *\Green{current}, tcb
-% *\Magenta{next});}
-%   }
-%   \item Machine-dependent thread initialization function:
-%   \ittms{
-%     \item \normalsize\texttt{void thread\_md\_init (tcb *t,
-% 	void (*fn) (void *),\break\null\qquad void *arg);}
-%   }
-% }
-% \end{slide}
-
-
-% \begin{frame}[fragile]
-% \frametitle{OS/161 switchframe_switch}
-% \medskip
-% \begin{overlayarea}{\textwidth}{56mm}%
-% \only<1>{\threadswitch}%
-% \only<2>{\centerline{\input{switch1}}}%
-% \only<3>{\centerline{\input{switch2}}}%
-% \only<4>{\centerline{\input{switch3}}}%
-% \only<5>{\centerline{\input{switch4}}}%
-% \only<6>{\centerline{\input{switch5}}}%
-% \end{overlayarea}
-% \smallskip
-% \itms{
-%   \item This is literally switch code from simple thread library
-%   \ittms{
-%     \item Nothing magic happens here
-%   \item You will see very similar code in OS/161 
-% 	  \texttt{kern/arch/mips/switch.S}
-%   }
-% }
-% \end{frame}
-
 \begin{slide}{Limitations of user-level threads}
 \itms{
   \item Can't take advantage of multiple CPUs or cores
@@ -432,36 +383,6 @@ func main() {
   \end{columns}
 \end{slide}
 
-% \begin{slide}{Background: calling conventions}
-% \begin{columns}
-% \column{.67\textwidth}   
-% \itms{
-%   \item Registers divided into 2 groups
-%   \ittms{
-%     \item Functions free to clobber \Red{\emph{caller-saved}}
-%       \rlap{regs} \\
-%       (\texttt{\%eax} [return val], \texttt{\%edx}, \& \texttt{\%ecx}
-%       on \rlap{x86)}
-%     \item But must restore \Red{\emph{callee-saved}} ones to
-%       original value upon return (on x86, \texttt{\%ebx},
-%       \texttt{\%esi}, \texttt{\%edi}, plus \texttt{\%ebp} and
-%       \texttt{\%esp})
-%   }
-%   \item \emph{sp} register always base of stack
-%   \ittms{
-%     \item Frame pointer (\emph{fp}) is old \emph{sp}
-%   }
-%   \item Local variables stored in registers and on stack
-%   \item Function arguments go in caller-saved regs and on stack
-%   \ittms{
-%     \item With x86, all arguments on stack
-%   }
-% }
-% \column{.4\textwidth}
-% \input{stkframe.tex}
-% \end{columns}
-% \end{slide}
-
 \begin{slide}{Background: procedure calls}
 \includegraphics[height=48mm]{figs/proc}
 \itms{
@@ -521,12 +442,12 @@ Thread *Thread_UThreadCreate(Thread *oldThr,
 
 \begin{slide}{COS: Switching Threads}
   \itms{
-    \item All thread switches go through \texttt{Sched\_Scheduler()} and 
-	\texttt{Sched\_Switch()}
-    \item \texttt{Sched\_switch()} calls \texttt{Thread\_SwitchArch} that runs 
-	\texttt{switchstack}
-    \item \texttt{switchstack} switches from one stack to other while saving 
-	and restoring registers
+    \item All thread switches go through \code{Sched_Scheduler()} and 
+	\code{Sched_Switch()}
+    \item \code{Sched_Switch()} calls \code{Thread_SwitchArch()} that runs 
+	\code{switchstack}
+    \item \code{switchstack} switches from one stack to other while saving and 
+	restoring registers
     \gap
   }
 
