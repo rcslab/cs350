@@ -1,0 +1,98 @@
+\documentclass[letterpaper,twocolumn,10pt]{article}
+
+\input{macros}
+
+\fancyhead[R]{\bf User Level Threads}
+
+\begin{document}
+
+\begin{lstlisting}[style=CStyle]
+#define NFIBERS 4
+
+ucontext_t fibers[NFIBERS];
+int done[NFIBERS];
+int current;
+
+void fiber_yield(void) {
+    int prev = current;
+
+    for (int i = 0; i < NFIBERS; ++i) {
+        current = (current + 1) % NFIBERS;
+
+        if (!done[current]) {
+            if (current != prev)
+                swapcontext(&fibers[prev],
+                    &fibers[current]);
+            break;
+        }
+    }
+}
+
+void fiber_exit(void) {
+    done[current] = 1;
+    fiber_yield();
+}
+
+void fiber_fn(int start, int end) {
+    int sum = 0;
+
+    for (int i = start; i < end; ++i) {
+        sum += i;
+        if (i == (start + end) / 2) {
+            printf("sum: %d (yield)\n", sum);
+            fiber_yield();
+        }
+    }
+
+    printf("sum: %d\n", sum);
+    fiber_exit();
+}
+
+int main(void) {
+    for (int i = 0; i < NFIBERS; ++i) {
+        // Initialize fiber[i] and allocate stack
+        getcontext(&fibers[i]);
+        fibers[i].uc_stack.ss_sp = malloc(SIGSTKSZ);
+        fibers[i].uc_stack.ss_size = SIGSTKSZ;
+        fibers[i].uc_link = NULL;
+        makecontext(&fibers[i],
+            (void (*)())fiber_fn,
+            2, 100 * i, 100 * (i + 1));
+    }
+
+    setcontext(&fibers[0]);
+}
+\end{lstlisting}
+
+\break
+
+\noindent
+
+Fibers are a name for lightweight user level threads.
+\texttt{ucontext\_t} holds a fiber context.
+
+\vspace{1em}
+
+\texttt{makecontext(fiber, fn, argc, ...)} creates a fiber that runs the function \texttt{fn}, passing it \texttt{argc} arguments.
+
+\vspace{1em}
+
+\texttt{swapcontext(prev, next)} suspends the \texttt{prev} fiber and activates \texttt{next}.
+
+\vspace{2em}
+
+\textbf{Question 1.} Is this code with 4 fibers likely to run faster or slower than single-threaded code?
+
+\vspace{12em}
+
+\noindent
+\textbf{Question 2.} How many context switches between fibers will there be?
+
+\vspace{12em}
+\noindent
+\textbf{Question 3.} What is the expected output?
+
+\vspace{12em}
+
+\end{document}
+
