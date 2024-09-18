@@ -421,10 +421,96 @@ func main() {
 }
 \end{slide}
 
+\begin{slide}{User-level Threading}
+\itms{
+  \item POSIX even included some helper functions to help you build user-level 
+      threads.
+  \item \texttt{void \man{makecontext}(ucontext\_t *ucp, void (*func)(void),}\\
+      \hspace{10em}\texttt{int argc, ...);}
+  \ittms{
+    \item Modify a previously created context with a function pointer and args
+    \item Use \texttt{getcontext} to create a valid context, then allocate a 
+	stack
+  }
+  \item \texttt{int \man{swapcontext}(ucontext\_t *old, ucontext\_t *new);}
+  \ittms{
+    \item Save the current thread into \texttt{old}, restore the \texttt{new} 
+	thread
+    \item Saves and restores all CPU registers including the stack pointer
+  }
+  \item \texttt{int \man{getcontext}(ucontext\_t *ucp);}
+  \ittms{
+    \item Get the current thread context and save it in \texttt{ucp}
+  }
+}
+\end{slide}
+
+\begin{slide}{User-level Threading: Creating a Fiber}
+\begin{ccode}
+ucontext_t ctx;
+
+// Use the current thread to initialize ctx to a valid state
+// Why? Some CPU registers (e.g., rflags) require specific values
+getcontext(&ctx);
+
+// Allocate a stack
+ctx.uc_stack.ss_sp = malloc(SIGSTKSZ);
+ctx.uc_stack.ss_size = SIGSTKSZ;
+
+// uc_link says what to do when done, NULL terminates the program.
+ctx.uc_link = NULL;
+
+// Initialize the context pointing to the function foo
+makecontext(&ctx, (void (*)())foo, 0);
+\end{ccode}
+\end{slide}
+
+\begin{slide}{User-level Threading: Context Switching}
+\itms{
+\item \texttt{swapcontext}: Saves and Restores the CPU state \& swaps stacks
+\item \texttt{ucontext\_t}: Contains all CPU state
+}
+\vspace{1em}
+
+\begin{tikzpicture}[every node/.style={scale=0.5,font=\sffamily}, scale=0.5]
+\node (core) [] {\texttt{swapcontext()}};
+\path (core)+(-8, -3) node (thr1) [draw, text width=6em, minimum height=4em, 
+    drop shadow] {\texttt{ucontext\_t}};
+\path (core)+(8, -3) node (thr2) [draw, text width=6em, minimum height=4em, 
+    drop shadow] {\texttt{ucontext\_t}};
+\path [draw, ->] (core) -- node [above] {Save CPU State} (thr1);
+\path [draw, ->] (thr2) -- node [above] {Restore CPU State} (core);
+\end{tikzpicture}
+
+\vspace{1em}
+
+\begin{columns}
+\column{0.5\textwidth}
+\begin{tikzpicture}[every node/.style={scale=0.5,font=\sffamily}, scale=0.5]
+\node[] at (2, 1) (stk1) {Fiber \#1};
+\stacktop{}
+    \cell{swapcontext()} \cellptr{\texttt{\%rsp} Top of stack}
+    \cell{...}
+\stackbottom
+\end{tikzpicture}
+
+\column{0.5\textwidth}
+\begin{tikzpicture}[every node/.style={scale=0.5,font=\sffamily}, scale=0.5]
+\node[] at (2, 1) (stk2) {Fiber \#2};
+\stacktop{}
+    \cell{swapcontext()} \cellptr{\texttt{\%rsp} Top of stack}
+    \cell{...}
+\stackbottom
+\end{tikzpicture}
+\end{columns}
+
+\end{slide}
+
 \begin{slide}{COS: Thread Details}
   \itms{
     \item Supports both kernel and user threads
     \item Basic Pthreads support see lib/libc/posix/pthread.c
+    \item Mechanically similar to the fiber example
   }
   \gap
 
