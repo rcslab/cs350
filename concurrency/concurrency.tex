@@ -83,7 +83,7 @@ void sub() {
 \end{columns}
 \end{slide}
 
-\begin{slide}{Critical Sectionsi: Schedule 1}
+\begin{slide}{Critical Sections: Schedule 1}
 \begin{columns}
 \column{0.5\textwidth}
     Thread \#1\\
@@ -678,7 +678,7 @@ The result of execution is as if all operations were executed in some
   \item Want to insulate programmer from implementing synchronization
     primitives
   \item Thread packages typically provide \emph{mutexes}: \\
-    \code{void mutex_init (mutex_t *m, \ldots);} \\
+    \code{void mutex_init (mutex_t *m, ...);} \\
     \code{void mutex_lock (mutex_t *m);} \\
     \code{int mutex_trylock (mutex_t *m);} \\
     \code{void mutex_unlock (mutex_t *m);} \\
@@ -802,7 +802,7 @@ void consumer (void *ignored) {
   }
   \item Better to inform scheduler of which threads can run
   \item Typically done with \emph{condition variables}
-  \item \code{int }\man{pthread\_cond\_init}\code{(pthread_cond_t *, \ldots);}
+  \item \code{int }\man{pthread\_cond\_init}\code{(pthread_cond_t *, ...);}
   \ittms{
     \item Initialize with specific attributes
   }
