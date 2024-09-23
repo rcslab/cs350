@@ -62,20 +62,20 @@ void sub() {
 \column{0.5\textwidth}
     \begin{ccode}
 int total = 0;
+
 void add() {
-    /* r8 := &total */
     for (int i=0; i<N; i++) {
-	lw r9, 0(r8) /* total++ */
-	add r9, 1
-	sw r9, 0(r8)
+        movl total, %eax /* %eax = total; */
+        addl $1, %eax    /* %eax++; */
+        movl %eax, total /* total = %eax; */
     }
 }
 
 void sub() {
     for (int i=0; i<N; i++) {
-	lw r9, 0(r8) /* total-- */
-	sub r9, 1
-	sw r9, 0(r8)
+        movl total, %eax /* %eax = total; */
+        subl $1, %eax    /* %eax--; */
+        movl %eax, total /* total = %eax; */
     }
 }
     \end{ccode}
@@ -89,9 +89,9 @@ void sub() {
     Thread \#1\\
     \begin{ccode}
 ------------
-lw r9, 0(r8) /* total++ */
-add r9, 1
-sw r9, 0(r8)
+movl total, %eax
+addl $1, %eax
+movl %eax, total
 
 
 
@@ -104,9 +104,9 @@ sw r9, 0(r8)
 
 
 
-lw r9, 0(r8) /* total-- */
-sub r9, 1
-sw r9, 0(r8)
+movl total, %eax
+subl $1, %eax
+movl %eax, total
 ------------
     \end{ccode}
 \end{columns}
@@ -124,11 +124,11 @@ sw r9, 0(r8)
     Thread \#1\\
     \begin{ccode}
 ------------
-lw r9, 0(r8) /* total++ */
+movl total, %eax
 
-add r9, 1
+addl $1, %eax
 
-sw r9, 0(r8)
+movl %eax, total
 
 ------------
     \end{ccode}
@@ -137,11 +137,11 @@ sw r9, 0(r8)
     \begin{ccode}
 ------------
 
-lw r9, 0(r8) /* total-- */
+movl total, %eax
 
-sub r9, 1
+subl $1, %eax
 
-sw r9, 0(r8)
+movl %eax, total
 ------------
     \end{ccode}
 \end{columns}
@@ -159,10 +159,10 @@ sw r9, 0(r8)
     Thread \#1\\
     \begin{ccode}
 ------------
-lw r9, 0(r8) /* total++ */
-add r9, 1
+movl total, %eax
+addl $1, %eax
 
-sw r9, 0(r8)
+movl %eax, total
 
 
 ------------
@@ -171,9 +171,9 @@ sw r9, 0(r8)
     Thread \#2\\
     \begin{ccode}
 ------------
-lw r9, 0(r8) /* total-- */
-sub r9, 1
-sw r9, 0(r8)
+movl total, %eax
+subl $1, %eax
+movl %eax, total
 
 
 
@@ -183,7 +183,7 @@ sw r9, 0(r8)
 \itms{
 \pause
 \gap
-\item Both load zero, then store clobbers the other
+\item Both load zero, then stores clobber one another
 \item Result: total = 1
 }
 \end{slide}
@@ -455,8 +455,7 @@ The result of execution is as if all operations were executed in some
   }
   \item \texttt{xchg} -- Exchange instruction is always locked (without the 
       prefix)
-  \item \texttt{cmpxchg} -- Compare and exchange is also locked (without the 
-      prefix)
+  \item \texttt{cmpxchg} -- Compare and exchange is \emph{not} automatically locked
   \item Special fence instructions can prevent re-ordering
   \ittms{
     \item \texttt{lfence} -- can't be reordered w.\ reads (or later
@@ -502,7 +501,7 @@ The result of execution is as if all operations were executed in some
              item *nextProduced = produce_item ();
              while (count == BUFFER_SIZE)
                  /* do nothing */;
-             buffer [in] = nextProduced;
+             buffer[in] = nextProduced;
              in = (in + 1) % BUFFER_SIZE;
              count++;
          }    
@@ -512,7 +511,7 @@ The result of execution is as if all operations were executed in some
          for (;;) {
              while (count == 0)
                  /* do nothing */;
-             item *nextConsumed =  buffer[out];
+             item *nextConsumed = buffer[out];
              out = (out + 1) % BUFFER_SIZE;
              count--;
              consume_item (nextConsumed);
@@ -555,7 +554,7 @@ The result of execution is as if all operations were executed in some
   \item What about a single-instruction add?
   \ittms{
     \item E.g., i386 allows single instruction \Blue{\texttt{addl
-    \$1,\_count}}
+    \$1, count}}
     \item So implement \texttt{count++/-{}-} with one instruction
     \item Now are we safe?
   }
@@ -669,6 +668,7 @@ The result of execution is as if all operations were executed in some
 
 \begin{slide}{Mutexes}
 \itms{
+  \iffalse
   \item Peterson expensive, only works for 2 processes
   \ittms{
     \item Can generalize to $n$, but for some fixed $n$
@@ -679,17 +679,20 @@ The result of execution is as if all operations were executed in some
   }
   \item Want to insulate programmer from implementing synchronization
     primitives
-  \item Thread packages typically provide \emph{mutexes}: \\
-    \code{void mutex_init (mutex_t *m, ...);} \\
-    \code{void mutex_lock (mutex_t *m);} \\
-    \code{int mutex_trylock (mutex_t *m);} \\
-    \code{void mutex_unlock (mutex_t *m);} \\
-  \ittms{          
-    \item Only one  thread acuires \texttt{m} at a time, others wait
-  }                
-}                  
-\end{slide}        
-                   
+  \fi
+  \item Thread packages typically provide \emph{mutexes}:
+}
+\begin{ccode}
+void mutex_init(mutex_t *m, ...);
+void mutex_lock(mutex_t *m);
+bool mutex_trylock(mutex_t *m);
+void mutex_unlock(mutex_t *m);
+\end{ccode}
+\itms{
+  \item Only one  thread acuires \texttt{m} at a time, others wait
+}
+\end{slide}
+
 \begin{slide}{\hypertarget{contract}{Thread API contract}}
 \itms{
   \item \Red{All global data should be protected by a mutex!}
@@ -743,7 +746,7 @@ Assuming no data races the program behaves sequentially consistent.
 \item \code{int }\man{pthread\_mutex\_trylock}\code{(pthread_mutex_t *m)}
 \ittms{
     \item Attempt to acquire a mutex
-    \item Return 0 if successful, otherwise -1 (\code{errno == EBUSY})
+    \item Return 0 if successful, otherwise \code{EBUSY}
 }
 }
 \end{slide}
@@ -784,7 +787,7 @@ void consumer (void *ignored) {
           mutex_lock (&mutex);
         }
 
-        item *nextConsumed =  buffer[out];
+        item *nextConsumed = buffer[out];
         out = (out + 1) % BUFFER_SIZE;
         count--;
         mutex_unlock (&mutex);
