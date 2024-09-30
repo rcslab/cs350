@@ -610,6 +610,12 @@ void Spinlock_Unlock(Spinlock *lock)
 }
 \end{slide}
 
+\begin{slide}{Core-to-Core Communications}
+\itms{
+\item Going to make a small CPU cache diagram
+}
+\end{slide}
+
 \begin{slide}{Implications for Multithreaded Design}
 \vspace{-1em}
 \itms{
@@ -941,7 +947,7 @@ void Spinlock_Unlock(Spinlock *lock)
 % } 
 % \end{slide}
 
-\section{MCS Locks -- Improving spinlock performance}
+\section{Improving spinlock performance}
 
 \begin{slide}{Improving Spinlocks}
 \itms{
@@ -969,6 +975,96 @@ void Spinlock_Unlock(Spinlock *lock)
   }
 }
 \end{slide}
+
+\begin{slide}{Spinlocks}
+\vspace{-1em}
+\begin{ccode}
+void Spinlock_Lock(Spinlock *lock)
+{
+    while (atomic_swap_uint64(&lock->lock, 1) == 1)
+	/* Spin! */;
+
+    lock->cpu = CPU();
+}
+void Spinlock_Unlock(Spinlock *lock)
+{
+    ASSERT(lock->cpu == CPU());
+
+    atomic_set_uint64(&lock->lock, 0);
+}
+\end{ccode}
+\end{slide}
+
+\begin{slide}{Reduce the Swap/Test-and-set Traffic}
+\itms{
+  \item How do we reduce bus traffic?
+  \gap
+  \item Swap/Test-and-Set requires invalidating all copies
+  \item O(N) messages on each attempt
+  \item Waiting cores just generate bus traffic!
+  \gap
+  \item Main idea: spinning on a shared cache line is cheaper
+}
+\end{slide}
+
+\begin{slide}{Reduce Bus Traffic with Test Test-and-Set}
+\vspace{-1em}
+\begin{ccode}
+void Spinlock_Lock(Spinlock *lock)
+{
+    /* Disable Interrupts */
+    Critical_Enter();
+
+    while (1)
+	while (lock->lock == 1)
+	    /* Spin! */;
+
+	if (atomic_swap_uint64(&lock->lock, 1) == 0) {
+	    lock->cpu = CPU();
+	    return;
+	}
+    }
+}
+
+// Unlock unmodified
+\end{ccode}
+\end{slide}
+
+\begin{slide}{How Does Test Test-and-Set Work?}
+\itms{
+  \item  Spin on a load checking the value
+  \ittms{
+    \item Initial load requires communications to enter shared state
+    \item Every core can enter the shared state
+    \item Spinning on a load causes no traffic
+  }
+  \item Releasing the lock
+  \ittms{
+    \item Stores 0 to the lock, invalidating everyone's copy
+  }
+  \item Multiple cores re-issue load and see its free
+  \item One or more attempt to aquire lock
+  \ittms{
+    \item Again, requires invalidating everyone's copy
+  }
+}
+\end{slide}
+
+\begin{slide}{Comparing with and without the Additional Test}
+\itms{
+  \item Increases latency in contended case
+  \ittms{
+    \item Bad if we expect locks to be mostly uncontended
+    \item Usually requires upgrading from shared to exclusive
+  }
+  \gap
+  \item Traffic on unlock unmodified O(n)
+  \gap
+  \item Wait traffic reduced to zero
+}
+\end{slide}
+
+\section{MCS Locks}
 
 \begin{slide}{MCS lock}
 \itms{
