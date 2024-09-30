@@ -13,7 +13,7 @@ thread.
 
 \begin{lstlisting}[style=CStyle]
 typedef struct Task {
-    void (*taskfunc)(void *);
+    void (*func)(void *);
     void *arg;
 } Task;
 

@@ -1,0 +1,14 @@
+
+import os
+
+env = Environment(tools = ['default', 'clang', 'pdftex', 'tex'])
+env['ENV']['PATH'] = os.environ['PATH']
+env.Append(LINKFLAGS = "-pthread")
+
+for p in Glob("*.tex"):
+    if (p.rstr() != "macros.tex"):
+        env.PDF(p)
+
+for c in Glob("*.c"):
+    env.Program(c)
+
