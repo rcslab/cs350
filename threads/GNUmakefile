@@ -1,8 +1,8 @@
 MAIN	     = l2.ltx
-SRC	     = minish.c redirsh.c pipesh.c
+SRC	     = 
 EXTRADIST    = $(SRC)
 EXTRAINSTALL = $(SRC)
-EXTRACLEAN   = src.ps src.pdf minish redirsh pipesh
+EXTRACLEAN   = src.ps src.pdf
 EXTRAIGNORE  = $(EXTRACLEAN)
 EXTRAPRINT   = src.pdf
 
@@ -10,7 +10,7 @@ CFLAGS=-Wall -Werror
 
 include ../Beamer.mk
 
-all: minish redirsh pipesh
+all:
 
 src.ps: $(SRC)
 	enscript -M Letter -1 -p $@ $(SRC)
