@@ -442,6 +442,7 @@ void Spinlock_Unlock(Spinlock *lock)
 }
 \end{slide}
 
+\iffalse
 \begin{slide}{Memory Ordering}
 \ittms{
   \item several choices available
@@ -463,6 +464,7 @@ void Spinlock_Unlock(Spinlock *lock)
 }
 
 \end{slide}
+\fi
 
 \begin{slide}{Example 1: Atomic Counters}
 \begin{smallccode}
@@ -470,8 +472,7 @@ void Spinlock_Unlock(Spinlock *lock)
 
     void recv_packet(...) {
         ...
-        atomic_fetch_add_explicit(&packet_count, 1,
-            memory_order_relaxed);
+        atomic_fetch_add(&packet_count, 1);
         ...
     }
 \end{smallccode}
@@ -480,21 +481,17 @@ void Spinlock_Unlock(Spinlock *lock)
 \begin{slide}{Example 2: Producer, Consumer}
 \begin{smallccode}
     struct message msg_buf;
-    _Atomic(_Bool) msg_ready;
+    _Atomic(bool) msg_ready;
 
     void send(struct message *m) {
         msg_buf = *m;
-        atomic_thread_fence(memory_order_release);
-        atomic_store_explicit(&msg_ready, 1,
-            memory_order_relaxed);
+        atomic_store(&msg_ready, true);
     }
 
     struct message *recv(void) {
-        _Bool ready = atomic_load_explicit(&msg_ready,
-            memory_order_relaxed);
+        bool ready = atomic_load(&msg_ready);
         if (!ready)
             return NULL;
-        atomic_thread_fence(memory_order_acquire);
         return &msg_buf;
     }
 \end{smallccode}
@@ -503,7 +500,7 @@ void Spinlock_Unlock(Spinlock *lock)
 \begin{slide}{Example 3: A Spinlock}
 \itms{
     \item Spinlocks are similar to Mutexes
-    \item Kernel's use these for small critical regions
+    \item Kernels use these for small critical regions
     \ittms{
 	\item Busy wait for others to release the lock
 	\item No sleeping and yielding to other Threads
@@ -512,12 +509,12 @@ void Spinlock_Unlock(Spinlock *lock)
 }
 \begin{smallccode}
     void spin_lock(atomic_flag *lock) {
-        while(atomic_flag_test_and_set_explicit(lock,
-            memory_order_acquire)) {}
+        while (atomic_flag_test_and_set(lock))
+            /* Spin! */;
     }
 
     void spin_unlock(atomic_flag *lock) {
-        atomic_flag_clear_explicit(lock, memory_order_release);
+        atomic_flag_clear(lock);
     }
 \end{smallccode}
 
