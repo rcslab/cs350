@@ -404,121 +404,121 @@ void Spinlock_Unlock(Spinlock *lock)
 \end{ccode}
 \end{slide}
 
-\section{C11 Atomics}
-
-\begin{slide}{Atomics and Portability}
-\itms{
-  \item Lots of variation in atomic instructions, consistency models, compiler behavior
-  \item Results in complex code when writing portable kernels and applications
-  \item Still a big problem today: Your laptop is x86, your cell phone is ARM
-  \ittms{
-    \item x86: Total Store Order Consistency Model, CISC
-    \item ARM: Relaxed Consistency Model, RISC
-  }
-  \item Fortunately, the new C11 standard has builtin support for atomics
-  \ittms{
-    \item Enable in GCC with the \texttt{-std=c11} flag
-  }
-  \item Also available in C++11, but not discussed today...
-}
-\end{slide}
-
-\begin{slide}{C11 Atomics: Basics}
-\ittms{
-  \item Portable support for synchronization
-  \item New atomic type: e.g., \texttt{\_Atomic(int) foo}
-  \ittms {
-    \item All standard ops (e.g., $+$, $-$, $/$, $*$) become sequentially 
-	consistent
-    \item Plus new intrinsics available (cmpxchg, atomic increment, etc.)
-  }
-  \item \texttt{atomic\_flag} is a special type
-  \ittms {
-    \item Atomic boolean value without support for loads and stores
-    \item Must be implemented lock-free
-    \item All other types might require locks, depending on the size and architecture
-  }
-  \item Fences also available to replace hand-coded memory barrier assembly
-}
-\end{slide}
-
-\iffalse
-\begin{slide}{Memory Ordering}
-\ittms{
-  \item several choices available
-  \begin{enumerate}
-    \item \texttt{memory\_order\_relaxed}: no memory ordering
-    \item \texttt{memory\_order\_consume}
-    \item \texttt{memory\_order\_acquire}
-    \item \texttt{memory\_order\_release}
-    \item \texttt{memory\_order\_acq\_rel}
-    \item \texttt{memory\_order\_seq\_cst}: full sequential consistency
-  \end{enumerate}
-  \item What happens if the chosen model is mistakenly too weak? Too Strong?
-  \item Suppose thread 1 \textbf{releases} and thread 2 \textbf{acquires}
-  \ittms {
-    \item Thread 1's preceding \textbf{writes} can't move past the \textbf{release} store
-    \item Thread 2's subsequent \textbf{reads} can't move before the \textbf{acquire} load
-    \item Warning: other threads might see a completely different order
-  }
-}
-
-\end{slide}
-\fi
-
-\begin{slide}{Example 1: Atomic Counters}
-\begin{smallccode}
-    _Atomic(int) packet_count;
-
-    void recv_packet(...) {
-        ...
-        atomic_fetch_add(&packet_count, 1);
-        ...
-    }
-\end{smallccode}
-\end{slide}
-
-\begin{slide}{Example 2: Producer, Consumer}
-\begin{smallccode}
-    struct message msg_buf;
-    _Atomic(bool) msg_ready;
-
-    void send(struct message *m) {
-        msg_buf = *m;
-        atomic_store(&msg_ready, true);
-    }
-
-    struct message *recv(void) {
-        bool ready = atomic_load(&msg_ready);
-        if (!ready)
-            return NULL;
-        return &msg_buf;
-    }
-\end{smallccode}
-\end{slide}
-
-\begin{slide}{Example 3: A Spinlock}
-\itms{
-    \item Spinlocks are similar to Mutexes
-    \item Kernels use these for small critical regions
-    \ittms{
-	\item Busy wait for others to release the lock
-	\item No sleeping and yielding to other Threads
-    }
-    \gap
-}
-\begin{smallccode}
-    void spin_lock(atomic_flag *lock) {
-        while (atomic_flag_test_and_set(lock))
-            /* Spin! */;
-    }
-
-    void spin_unlock(atomic_flag *lock) {
-        atomic_flag_clear(lock);
-    }
-\end{smallccode}
-
-\end{slide}
+%\section{C11 Atomics}
+%
+%\begin{slide}{Atomics and Portability}
+%\itms{
+%  \item Lots of variation in atomic instructions, consistency models, compiler behavior
+%  \item Results in complex code when writing portable kernels and applications
+%  \item Still a big problem today: Your laptop is x86, your cell phone is ARM
+%  \ittms{
+%    \item x86: Total Store Order Consistency Model, CISC
+%    \item ARM: Relaxed Consistency Model, RISC
+%  }
+%  \item Fortunately, the new C11 standard has builtin support for atomics
+%  \ittms{
+%    \item Enable in GCC with the \texttt{-std=c11} flag
+%  }
+%  \item Also available in C++11, but not discussed today...
+%}
+%\end{slide}
+%
+%\begin{slide}{C11 Atomics: Basics}
+%\ittms{
+%  \item Portable support for synchronization
+%  \item New atomic type: e.g., \texttt{\_Atomic(int) foo}
+%  \ittms {
+%    \item All standard ops (e.g., $+$, $-$, $/$, $*$) become sequentially 
+%	consistent
+%    \item Plus new intrinsics available (cmpxchg, atomic increment, etc.)
+%  }
+%  \item \texttt{atomic\_flag} is a special type
+%  \ittms {
+%    \item Atomic boolean value without support for loads and stores
+%    \item Must be implemented lock-free
+%    \item All other types might require locks, depending on the size and architecture
+%  }
+%  \item Fences also available to replace hand-coded memory barrier assembly
+%}
+%\end{slide}
+%
+%\iffalse
+%\begin{slide}{Memory Ordering}
+%\ittms{
+%  \item several choices available
+%  \begin{enumerate}
+%    \item \texttt{memory\_order\_relaxed}: no memory ordering
+%    \item \texttt{memory\_order\_consume}
+%    \item \texttt{memory\_order\_acquire}
+%    \item \texttt{memory\_order\_release}
+%    \item \texttt{memory\_order\_acq\_rel}
+%    \item \texttt{memory\_order\_seq\_cst}: full sequential consistency
+%  \end{enumerate}
+%  \item What happens if the chosen model is mistakenly too weak? Too Strong?
+%  \item Suppose thread 1 \textbf{releases} and thread 2 \textbf{acquires}
+%  \ittms {
+%    \item Thread 1's preceding \textbf{writes} can't move past the \textbf{release} store
+%    \item Thread 2's subsequent \textbf{reads} can't move before the \textbf{acquire} load
+%    \item Warning: other threads might see a completely different order
+%  }
+%}
+%
+%\end{slide}
+%\fi
+%
+%\begin{slide}{Example 1: Atomic Counters}
+%\begin{smallccode}
+%    _Atomic(int) packet_count;
+%
+%    void recv_packet(...) {
+%        ...
+%        atomic_fetch_add(&packet_count, 1);
+%        ...
+%    }
+%\end{smallccode}
+%\end{slide}
+%
+%\begin{slide}{Example 2: Producer, Consumer}
+%\begin{smallccode}
+%    struct message msg_buf;
+%    _Atomic(bool) msg_ready;
+%
+%    void send(struct message *m) {
+%        msg_buf = *m;
+%        atomic_store(&msg_ready, true);
+%    }
+%
+%    struct message *recv(void) {
+%        bool ready = atomic_load(&msg_ready);
+%        if (!ready)
+%            return NULL;
+%        return &msg_buf;
+%    }
+%\end{smallccode}
+%\end{slide}
+%
+%\begin{slide}{Example 3: A Spinlock}
+%\itms{
+%    \item Spinlocks are similar to Mutexes
+%    \item Kernels use these for small critical regions
+%    \ittms{
+%	\item Busy wait for others to release the lock
+%	\item No sleeping and yielding to other Threads
+%    }
+%    \gap
+%}
+%\begin{smallccode}
+%    void spin_lock(atomic_flag *lock) {
+%        while (atomic_flag_test_and_set(lock))
+%            /* Spin! */;
+%    }
+%
+%    void spin_unlock(atomic_flag *lock) {
+%        atomic_flag_clear(lock);
+%    }
+%\end{smallccode}
+%
+%\end{slide}
 
 \section{Cache coherence -- the hardware view}
 
