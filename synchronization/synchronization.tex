@@ -404,124 +404,121 @@ void Spinlock_Unlock(Spinlock *lock)
 \end{ccode}
 \end{slide}
 
-\section{C11 Atomics}
-
-\begin{slide}{Atomics and Portability}
-\itms{
-  \item Lots of variation in atomic instructions, consistency models, compiler behavior
-  \item Results in complex code when writing portable kernels and applications
-  \item Still a big problem today: Your laptop is x86, your cell phone is ARM
-  \ittms{
-    \item x86: Total Store Order Consistency Model, CISC
-    \item ARM: Relaxed Consistency Model, RISC
-  }
-  \item Fortunately, the new C11 standard has builtin support for atomics
-  \ittms{
-    \item Enable in GCC with the \texttt{-std=c11} flag
-  }
-  \item Also available in C++11, but not discussed today...
-}
-\end{slide}
-
-\begin{slide}{C11 Atomics: Basics}
-\ittms{
-  \item Portable support for synchronization
-  \item New atomic type: e.g., \texttt{\_Atomic(int) foo}
-  \ittms {
-    \item All standard ops (e.g., $+$, $-$, $/$, $*$) become sequentially 
-	consistent
-    \item Plus new intrinsics available (cmpxchg, atomic increment, etc.)
-  }
-  \item \texttt{atomic\_flag} is a special type
-  \ittms {
-    \item Atomic boolean value without support for loads and stores
-    \item Must be implemented lock-free
-    \item All other types might require locks, depending on the size and architecture
-  }
-  \item Fences also available to replace hand-coded memory barrier assembly
-}
-\end{slide}
-
-\begin{slide}{Memory Ordering}
-\ittms{
-  \item several choices available
-  \begin{enumerate}
-    \item \texttt{memory\_order\_relaxed}: no memory ordering
-    \item \texttt{memory\_order\_consume}
-    \item \texttt{memory\_order\_acquire}
-    \item \texttt{memory\_order\_release}
-    \item \texttt{memory\_order\_acq\_rel}
-    \item \texttt{memory\_order\_seq\_cst}: full sequential consistency
-  \end{enumerate}
-  \item What happens if the chosen model is mistakenly too weak? Too Strong?
-  \item Suppose thread 1 \textbf{releases} and thread 2 \textbf{acquires}
-  \ittms {
-    \item Thread 1's preceding \textbf{writes} can't move past the \textbf{release} store
-    \item Thread 2's subsequent \textbf{reads} can't move before the \textbf{acquire} load
-    \item Warning: other threads might see a completely different order
-  }
-}
-
-\end{slide}
-
-\begin{slide}{Example 1: Atomic Counters}
-\begin{smallccode}
-    _Atomic(int) packet_count;
-
-    void recv_packet(...) {
-        ...
-        atomic_fetch_add_explicit(&packet_count, 1,
-            memory_order_relaxed);
-        ...
-    }
-\end{smallccode}
-\end{slide}
-
-\begin{slide}{Example 2: Producer, Consumer}
-\begin{smallccode}
-    struct message msg_buf;
-    _Atomic(_Bool) msg_ready;
-
-    void send(struct message *m) {
-        msg_buf = *m;
-        atomic_thread_fence(memory_order_release);
-        atomic_store_explicit(&msg_ready, 1,
-            memory_order_relaxed);
-    }
-
-    struct message *recv(void) {
-        _Bool ready = atomic_load_explicit(&msg_ready,
-            memory_order_relaxed);
-        if (!ready)
-            return NULL;
-        atomic_thread_fence(memory_order_acquire);
-        return &msg_buf;
-    }
-\end{smallccode}
-\end{slide}
-
-\begin{slide}{Example 3: A Spinlock}
-\itms{
-    \item Spinlocks are similar to Mutexes
-    \item Kernel's use these for small critical regions
-    \ittms{
-	\item Busy wait for others to release the lock
-	\item No sleeping and yielding to other Threads
-    }
-    \gap
-}
-\begin{smallccode}
-    void spin_lock(atomic_flag *lock) {
-        while(atomic_flag_test_and_set_explicit(lock,
-            memory_order_acquire)) {}
-    }
-
-    void spin_unlock(atomic_flag *lock) {
-        atomic_flag_clear_explicit(lock, memory_order_release);
-    }
-\end{smallccode}
-
-\end{slide}
+%\section{C11 Atomics}
+%
+%\begin{slide}{Atomics and Portability}
+%\itms{
+%  \item Lots of variation in atomic instructions, consistency models, compiler behavior
+%  \item Results in complex code when writing portable kernels and applications
+%  \item Still a big problem today: Your laptop is x86, your cell phone is ARM
+%  \ittms{
+%    \item x86: Total Store Order Consistency Model, CISC
+%    \item ARM: Relaxed Consistency Model, RISC
+%  }
+%  \item Fortunately, the new C11 standard has builtin support for atomics
+%  \ittms{
+%    \item Enable in GCC with the \texttt{-std=c11} flag
+%  }
+%  \item Also available in C++11, but not discussed today...
+%}
+%\end{slide}
+%
+%\begin{slide}{C11 Atomics: Basics}
+%\ittms{
+%  \item Portable support for synchronization
+%  \item New atomic type: e.g., \texttt{\_Atomic(int) foo}
+%  \ittms {
+%    \item All standard ops (e.g., $+$, $-$, $/$, $*$) become sequentially 
+%	consistent
+%    \item Plus new intrinsics available (cmpxchg, atomic increment, etc.)
+%  }
+%  \item \texttt{atomic\_flag} is a special type
+%  \ittms {
+%    \item Atomic boolean value without support for loads and stores
+%    \item Must be implemented lock-free
+%    \item All other types might require locks, depending on the size and architecture
+%  }
+%  \item Fences also available to replace hand-coded memory barrier assembly
+%}
+%\end{slide}
+%
+%\iffalse
+%\begin{slide}{Memory Ordering}
+%\ittms{
+%  \item several choices available
+%  \begin{enumerate}
+%    \item \texttt{memory\_order\_relaxed}: no memory ordering
+%    \item \texttt{memory\_order\_consume}
+%    \item \texttt{memory\_order\_acquire}
+%    \item \texttt{memory\_order\_release}
+%    \item \texttt{memory\_order\_acq\_rel}
+%    \item \texttt{memory\_order\_seq\_cst}: full sequential consistency
+%  \end{enumerate}
+%  \item What happens if the chosen model is mistakenly too weak? Too Strong?
+%  \item Suppose thread 1 \textbf{releases} and thread 2 \textbf{acquires}
+%  \ittms {
+%    \item Thread 1's preceding \textbf{writes} can't move past the \textbf{release} store
+%    \item Thread 2's subsequent \textbf{reads} can't move before the \textbf{acquire} load
+%    \item Warning: other threads might see a completely different order
+%  }
+%}
+%
+%\end{slide}
+%\fi
+%
+%\begin{slide}{Example 1: Atomic Counters}
+%\begin{smallccode}
+%    _Atomic(int) packet_count;
+%
+%    void recv_packet(...) {
+%        ...
+%        atomic_fetch_add(&packet_count, 1);
+%        ...
+%    }
+%\end{smallccode}
+%\end{slide}
+%
+%\begin{slide}{Example 2: Producer, Consumer}
+%\begin{smallccode}
+%    struct message msg_buf;
+%    _Atomic(bool) msg_ready;
+%
+%    void send(struct message *m) {
+%        msg_buf = *m;
+%        atomic_store(&msg_ready, true);
+%    }
+%
+%    struct message *recv(void) {
+%        bool ready = atomic_load(&msg_ready);
+%        if (!ready)
+%            return NULL;
+%        return &msg_buf;
+%    }
+%\end{smallccode}
+%\end{slide}
+%
+%\begin{slide}{Example 3: A Spinlock}
+%\itms{
+%    \item Spinlocks are similar to Mutexes
+%    \item Kernels use these for small critical regions
+%    \ittms{
+%	\item Busy wait for others to release the lock
+%	\item No sleeping and yielding to other Threads
+%    }
+%    \gap
+%}
+%\begin{smallccode}
+%    void spin_lock(atomic_flag *lock) {
+%        while (atomic_flag_test_and_set(lock))
+%            /* Spin! */;
+%    }
+%
+%    void spin_unlock(atomic_flag *lock) {
+%        atomic_flag_clear(lock);
+%    }
+%\end{smallccode}
+%
+%\end{slide}
 
 \section{Cache coherence -- the hardware view}
 
@@ -610,9 +607,99 @@ void Spinlock_Unlock(Spinlock *lock)
 }
 \end{slide}
 
+% \begin{slide}{cc-NUMA}
+% \itms{
+% \item Previous slide had \emph{dance hall} architectures
+% \ittms{
+%   \item Any CPU can ``dance with'' any memory equally
+% }
+% \item An alternative: Non-Uniform Memory Access
+% \ittms{
+%   \item Each CPU has fast access to some ``close'' memory
+%   \item Slower to access memory that is farther away
+%   \item Use a directory to keep track of who is caching what
+% }
+% \item Originally for machines with many CPUs
+% \ittms{
+%   \item But AMD Opterons integrated mem.\ controller, essentially NUMA
+%   \item Now intel CPUs are like this, too
+% }
+% \item cc-NUMA = cache-coherent NUMA
+% \ittms{
+%   \item Can also have non-cache-coherent NUMA, though uncommon
+%   \item BBN Butterfly 1 has no cache at all
+%   \item Cray T3D has local/global memory
+% }}
+% \end{slide}
+ 
 \begin{slide}{Core-to-Core Communications}
+\tikzstyle{cpu}=[draw, fill=white, text width=5em, text centered, 
+    minimum height=2.5em]
+\tikzstyle{l1c}=[draw, fill=white, text width=5em, text centered, 
+    minimum height=2.5em]
+\tikzstyle{l2c}=[draw, fill=white, text width=5em, text centered, 
+    minimum height=2.5em]
+\tikzstyle{llc}=[draw, fill=white, text width=30em, text centered, 
+    minimum height=2.5em]
+\def\blockdist{1}
+\def\cpudist{3}
+
+\begin{tikzpicture}
+\node (c1) [cpu] {Core};
+\path (c1.south)+(0,-\blockdist) node (c1l1) [l1c] {L1};
+\path (c1l1.south)+(0,-\blockdist) node (c1l2) [l2c] {L2};
+\path [draw, <->] (c1) -- node [above] {} (c1l1);
+\path [draw, <->] (c1l1) -- node [above] {} (c1l2);
+
+\path (c1.east)+(\cpudist,0) node (c2) [cpu] {Core};
+\path (c2.south)+(0,-\blockdist) node (c2l1) [l1c] {L1};
+\path (c2l1.south)+(0,-\blockdist) node (c2l2) [l2c] {L2};
+\path [draw, <->] (c2) -- node [above] {} (c2l1);
+\path [draw, <->] (c2l1) -- node [above] {} (c2l2);
+
+\path (c2.east)+(\cpudist,0) node (c3) [cpu] {Core};
+\path (c3.south)+(0,-\blockdist) node (c3l1) [l1c] {L1};
+\path (c3l1.south)+(0,-\blockdist) node (c3l2) [l2c] {L2};
+\path [draw, <->] (c3) -- node [above] {} (c3l1);
+\path [draw, <->] (c3l1) -- node [above] {} (c3l2);
+
+\path (c3.east)+(\cpudist,0) node (c4) [cpu] {Core};
+\path (c4.south)+(0,-\blockdist) node (c4l1) [l1c] {L1};
+\path (c4l1.south)+(0,-\blockdist) node (c4l2) [l2c] {L2};
+\path [draw, <->] (c4) -- node [above] {} (c4l1);
+\path [draw, <->] (c4l1) -- node [above] {} (c4l2);
+
+\path (c1l2.south)+(6,-\blockdist) node (llc) [llc] {Last Level 
+    Cache};
+\path [draw, <->] (c1l2) -- node [above] {} (llc);
+\path [draw, <->] (c2l2) -- node [above] {} (llc);
+\path [draw, <->] (c3l2) -- node [above] {} (llc);
+\path [draw, <->] (c4l2) -- node [above] {} (llc);
+\end{tikzpicture}
+\end{slide}
+
+\begin{slide}{Real World Coherence Costs}
 \itms{
-\item Going to make a small CPU cache diagram
+  \item See
+      \cref{readings/sync.pdf}{[David]}
+      for a great reference, summarized here...
+  \ittms{
+    \item Intel Xeon: 3 cycle L1, 11 cycle L2, 44 cycle LLC, 355 cycle RAM
+  }
+  \item Remote core holds modified line state:
+  \ittms{
+    \item load: 109 cycles (LLC $+$ 65)
+    \item store: 115 cycles (LLC $+$ 71)
+    \item atomic CAS: 120 cycles (LLC $+$ 76)
+    \item NUMA load: 289 cycles
+    \item NUMA store: 320 cycles
+    \item NUMA atomic CAS: 324 cycles 
+  }
+  \item But only a partial picture
+  \ittms{
+    \item Could be faster because of out-of-order execution
+    \item Could be slower because of bus contention or multiple hops
+  }
 }
 \end{slide}
 
@@ -642,56 +729,6 @@ void Spinlock_Unlock(Spinlock *lock)
     \item Reduce costly cache coherence traffic
     \item Advanced algorithms spin on a cache line local to a core (e.g., MCS 
 	Locks)
-  }
-}
-\end{slide}
-
-% \begin{slide}{cc-NUMA}
-% \itms{
-% \item Previous slide had \emph{dance hall} architectures
-% \ittms{
-%   \item Any CPU can ``dance with'' any memory equally
-% }
-% \item An alternative: Non-Uniform Memory Access
-% \ittms{
-%   \item Each CPU has fast access to some ``close'' memory
-%   \item Slower to access memory that is farther away
-%   \item Use a directory to keep track of who is caching what
-% }
-% \item Originally for machines with many CPUs
-% \ittms{
-%   \item But AMD Opterons integrated mem.\ controller, essentially NUMA
-%   \item Now intel CPUs are like this, too
-% }
-% \item cc-NUMA = cache-coherent NUMA
-% \ittms{
-%   \item Can also have non-cache-coherent NUMA, though uncommon
-%   \item BBN Butterfly 1 has no cache at all
-%   \item Cray T3D has local/global memory
-% }}
-% \end{slide}
- 
-\begin{slide}{Real World Coherence Costs}
-\itms{
-  \item See
-      \cref{readings/sync.pdf}{[David]}
-      for a great reference, summarized here...
-  \ittms{
-    \item Intel Xeon: 3 cycle L1, 11 cycle L2, 44 cycle LLC, 355 cycle RAM
-  }
-  \item Remote core holds modified line state:
-  \ittms{
-    \item load: 109 cycles (LLC $+$ 65)
-    \item store: 115 cycles (LLC $+$ 71)
-    \item atomic CAS: 120 cycles (LLC $+$ 76)
-    \item NUMA load: 289 cycles
-    \item NUMA store: 320 cycles
-    \item NUMA atomic CAS: 324 cycles 
-  }
-  \item But only a partial picture
-  \ittms{
-    \item Could be faster because of out-of-order execution
-    \item Could be slower because of bus contention or multiple hops
   }
 }
 \end{slide}
@@ -986,6 +1023,7 @@ void Spinlock_Lock(Spinlock *lock)
 
     lock->cpu = CPU();
 }
+
 void Spinlock_Unlock(Spinlock *lock)
 {
     ASSERT(lock->cpu == CPU());
@@ -1012,9 +1050,6 @@ void Spinlock_Unlock(Spinlock *lock)
 \begin{ccode}
 void Spinlock_Lock(Spinlock *lock)
 {
-    /* Disable Interrupts */
-    Critical_Enter();
-
     while (1)
 	while (lock->lock == 1)
 	    /* Spin! */;
@@ -1026,7 +1061,10 @@ void Spinlock_Lock(Spinlock *lock)
     }
 }
 
-// Unlock unmodified
+void Spinlock_Unlock(Spinlock *lock)
+{
+    atomic_set_uint64(&lock->lock, 0);
+}
 \end{ccode}
 \end{slide}
 
@@ -1038,11 +1076,14 @@ void Spinlock_Lock(Spinlock *lock)
     \item Every core can enter the shared state
     \item Spinning on a load causes no traffic
   }
+  \gap
   \item Releasing the lock
   \ittms{
     \item Stores 0 to the lock, invalidating everyone's copy
   }
+  \gap
   \item Multiple cores re-issue load and see its free
+  \gap
   \item One or more attempt to aquire lock
   \ittms{
     \item Again, requires invalidating everyone's copy
