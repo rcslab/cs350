@@ -1,0 +1,64 @@
+\documentclass[letterpaper,twocolumn,10pt]{article}
+
+\input{macros}
+
+\fancyhead[R]{\bf Semaphore}
+
+\begin{document}
+
+Spinlocks and WaitChannels are the low-level equivalents to Mutexes and 
+Condition Variables.  Spinlocks are designed to lock small sequences of code 
+that do not include sleeps.  WaitChannels maintain a list structure that 
+contains a list of sleeping threads and coordinates sleeping and waking up with 
+the CPU scheduler.
+
+Below is a partial implementation of Semaphores that uses spinlocks and 
+waitchannels.
+
+\begin{lstlisting}[style=CStyle]
+typedef struct Semaphore {
+  int sem_count;
+  Spinlock *sem_lock;
+  WaitChannel *sem_wchan;
+} Semaphore;
+
+Semaphore_Wait(Semaphore *sem) {
+  Spinlock_Lock(&sem->sem_lock);
+  while (sem->sem_count == 0) {
+    // Fill me in
+
+
+
+
+
+
+
+
+
+  }
+  sem->sem_count--;
+  Spinlock_Unlock(&sem->sem_lock);
+}
+
+Semaphore_Post(Semaphore *sem) {
+  // Fill me in
+
+
+
+
+
+
+}
+\end{lstlisting}
+
+\break
+
+\textbf{Question 1.} Use hand-over-hand locking to fill in the missing lines of 
+\texttt{Semaphore\_Wait}.
+\vspace{12em}
+
+\textbf{Question 2.} Fill in the missing code in \texttt{Semaphore\_Post}.
+\vspace{12em}
+
+\end{document}
+
