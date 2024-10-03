@@ -5,7 +5,7 @@
 
 _Atomic int lock = 0;
 _Atomic int next = 0;
-const int N = 100000;
+const int N = 1000000;
 
 int last = -1;
 int unfair;

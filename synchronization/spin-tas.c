@@ -4,7 +4,7 @@
 #include <stdio.h>
 
 _Atomic bool lock = false;
-const int N = 100000;
+const int N = 1000000;
 
 int last = -1;
 int unfair;
