@@ -31,17 +31,17 @@ void spin_lock(qnode *node) {
 }
 
 void spin_unlock(qnode *node) {
-	if (!atomic_load(&node->next)) {
+	qnode *next = atomic_load(&node->next);
+	if (!next) {
 		qnode *prev = node;
 		if (atomic_compare_exchange_strong(&lock, &prev, NULL)) {
 			return;
 		}
-	}
 
-	qnode *next;
-	do {
-		next = atomic_load(&node->next);
-	} while (!next);
+		do {
+			next = atomic_load(&node->next);
+		} while (!next);
+	}
 
 	atomic_store(&next->locked, false);
 }

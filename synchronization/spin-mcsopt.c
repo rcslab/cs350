@@ -32,19 +32,20 @@ void spin_lock(qnode *node) {
 }
 
 void spin_unlock(qnode *node) {
-	if (!atomic_load(&node->next)) {
+	qnode *next = atomic_load_explicit(&node->next, memory_order_relaxed);
+	if (!next) {
 		qnode *prev = node;
-		if (atomic_compare_exchange_strong(&lock, &prev, NULL)) {
+		if (atomic_compare_exchange_strong_explicit(&lock, &prev, NULL,
+		    memory_order_release, memory_order_relaxed)) {
 			return;
 		}
+
+		atomic_thread_fence(memory_order_acquire);
+
+		do {
+			next = atomic_load_explicit(&node->next, memory_order_relaxed);
+		} while (!next);
 	}
-
-	atomic_thread_fence(memory_order_acquire);
-
-	qnode *next;
-	do {
-		next = atomic_load_explicit(&node->next, memory_order_relaxed);
-	} while (!next);
 
 	atomic_store_explicit(&next->locked, false, memory_order_release);
 }
@@ -66,7 +67,7 @@ void *func(void *ptr) {
 }
 
 int main(void) {
-#define NTHREADS 8
+#define NTHREADS 4
 	pthread_t threads[NTHREADS];
 	int ids[NTHREADS];
 
