@@ -1,0 +1,79 @@
+\documentclass[letterpaper,twocolumn,10pt]{article}
+
+\input{macros}
+
+\fancyhead[R]{\bf Hand-Over-Hand Locking}
+
+\begin{document}
+
+\begin{lstlisting}[style=CStyle]
+#include <stdlib.h>
+#include <pthread.h>
+
+struct node {
+    pthread_mutex_t mutex;
+    struct node *next;
+    int value;
+};
+
+struct node head = {
+    .mutex = PTHREAD_MUTEX_INITIALIZER,
+    .next = NULL,
+    .value = 0,
+};
+
+void insert(int value) {
+    struct node *node = &head;
+    struct node *next;
+
+    pthread_mutex_lock(&node->mutex);
+    while ((next = node->next)) {
+        pthread_mutex_unlock(&node->mutex);
+        pthread_mutex_lock(&next->mutex);
+        if (next->value < value) {
+            node = next;
+        } else {
+            pthread_mutex_unlock(&next->mutex);
+            pthread_mutex_lock(&node->mutex);
+            break;
+        }
+    }
+
+    next = malloc(sizeof(*next));
+    pthread_mutex_init(&next->mutex, NULL);
+    next->value = value;
+    next->next = node->next;
+    node->next = next;
+    pthread_mutex_unlock(&node->mutex);
+}
+\end{lstlisting}
+
+\break
+
+\noindent
+The code on the left is supposed to implement thread-safe insertion into a sorted linked list.
+Suppose two threads run concurrently:
+
+\vspace{1em}
+
+\noindent
+Thread 1: \texttt{insert(1); insert(3); insert(5);} \\
+Thread 2: \texttt{insert(6); insert(4); insert(2);}
+
+\vspace{2em}
+
+\noindent
+\textbf{Question 1.} Does the code contain any data races?  If so, how would you fix them?
+
+\vspace{12em}
+
+\noindent
+\textbf{Question 2.} Does the code work as intended?  If not, how would you fix it?
+
+\vspace{12em}
+
+\noindent
+\textbf{Question 3.} If a thread is preempted at line 22 in the middle of the list, can the other thread insert at the beginning of the list?  What about the end of the list?
+
+\end{document}
+
