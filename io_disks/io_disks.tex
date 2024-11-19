@@ -460,7 +460,7 @@ $Rotational~Delay = \frac{1}{2} \times \frac{60 sec/min}{RPM}$
     \item \emph{Command descriptor block}---e.g., read 10 blocks
 	    at pos.\ $N$
     \item Optional \emph{task attribute}---\textsc{simple},
-      \textsc{orderd}, \textsc{head of queue}
+      \textsc{ordered}, \textsc{head of queue}
     \item Optional:  output/input buffer, sense data
     \item \emph{Status byte}---\textsc{good, check condition,
   intermediate}, $\ldots$
@@ -468,7 +468,7 @@ $Rotational~Delay = \frac{1}{2} \times \frac{60 sec/min}{RPM}$
 }
 \end{slide}
 
-\begin{slide}{Executing SCSI commdns}
+\begin{slide}{Executing SCSI commands}
 \itms{
   \item Each LUN maintains a queue of \emph{tasks}
   \ittms{
@@ -739,7 +739,7 @@ Otherwise:
   \ittms{
     \item Takes 25 $\mu\mathrm s$ + time to get data off chip
   }
-  \item Must \emph{erase} whole block before \emph{programing}
+  \item Must \emph{erase} whole block before \emph{programming}
   \ittms{
     \item Erase sets all bits to 1---very expensive (2 msec)
     \item Programming pre-erased block requires moving data to
