@@ -10,6 +10,8 @@
 
 \maketitle
 
+\section{Computer Bus and Device Architecture}
+
 \begin{slide}{Memory and I/O buses}
 \begin{centering}
 \input{bus.tex}\\
@@ -51,6 +53,8 @@
 \begin{slide}{What is I/O bus?  E.g., PCI}
 \centerline{\includegraphics[height=2.8in]{figs/pci}}
 \end{slide}
+
+\section{Device Drivers}
 
 \begin{slide}{Communicating with a device}
 \itms{
@@ -111,24 +115,25 @@ $\overline{\mbox{ERR}}$& -- & -- & -- \cr
 \begin{frame}[fragile]
 \frametitle{Writing bit to parallel port
 \href{http://wiki.osdev.org/Parallel_port}{[osdev]}}
-\smallskip
 \begin{ccode}
    void
    sendbyte(uint8_t byte)
    {
      /* Wait until `\color{comment}$\overline{\mbox{BSY}}$' bit is 1. */
      while ((inb (0x379) & 0x80) == 0)
-       delay ();
+       delay();
 
      /* Put the byte we wish to send on pins D7-0. */
-     outb (0x378, byte);
+     outb(0x378, byte);
 
-     /* Pulse STR (strobe) line to inform the printer
-      * that a byte is available */
-     uint8_t ctrlval = inb (0x37a);
-     outb (0x37a, ctrlval | 0x01);
-     delay ();
-     outb (0x37a, ctrlval);
+     /*
+      * Pulse STR (strobe) line to inform the printer
+      * that a byte is available
+      */
+     uint8_t ctrlval = inb(0x37a);
+     outb(0x37a, ctrlval | 0x01);
+     delay();
+     outb(0x37a, ctrlval);
    }  
 \end{ccode}
 \end{frame}
@@ -145,10 +150,9 @@ $\overline{\mbox{ERR}}$& -- & -- & -- \cr
   \end{itemize}
   \item Devices can achieve same effect with physical addresses, e.g.:
 \begin{ccode}
-    volatile int32_t *device_control
-        = (int32_t *) 0xc00c0100;
-    *device_control = 0x80;
-    int32_t status = *device_control;
+    volatile int32_t *device_control = (int32_t *)0xc00c0100;
+    *device_control = 0x80; /* Write to control reg */
+    int32_t status = *device_control; /* Read status reg */
 \end{ccode}
   \begin{itemize}
     \item OS must map physical to virtual addresses, ensure
@@ -239,11 +243,11 @@ $\overline{\mbox{ERR}}$& -- & -- & -- \cr
      and polling
   }
   \item Very good for disk requests
-  \item Rest of today:  Disks (network devices in 3 lectures)
+  \item Rest of today: Disks
 }
 \end{slide}
 
-
+\section{Disk Drives}
 
 \begin{slide}{Anatomy of a disk
     \cref{sched/readings/diskmodel.pdf}{[Ruemmler]}}
@@ -342,6 +346,30 @@ $\overline{\mbox{ERR}}$& -- & -- & -- \cr
 }
 \end{slide}
 
+\begin{slide}{Transfer Time}
+$Transfer~Time = Seek~Time + Rotational~Delay + MIN(Bus~Speed, Max~Read~Speed)$
+
+\itms{
+\gap
+\item $Max~Read~Speed$ is determined by how fast we read sectors off the 
+    platter:
+\gap
+}
+
+$Max~Read~Speed = \frac{RPM}{60 sec/min} \times Bytes~per~Sector \times 
+    Sectors~per~Track$
+
+\itms{
+\gap
+\item $Rotational~Delay$ is how long it takes on average to rotate the platter 
+    into position (i.e.~half a rotation of the platter).
+\gap
+}
+
+$Rotational~Delay = \frac{1}{2} \times \frac{60 sec/min}{RPM}$
+
+\end{slide}
+
 \begin{frame}<1-2>
 \frametitle{Sectors}
 \itms{
@@ -392,7 +420,9 @@ $\overline{\mbox{ERR}}$& -- & -- & -- \cr
 }
 \end{slide}
 
+\iffalse
 
+\section{SCSI}
 
 \begin{slide}{SCSI overview \cref{sched/readings/scsi.pdf}{[Schmidt]}}
 \itms{
@@ -484,6 +514,8 @@ $\overline{\mbox{ERR}}$& -- & -- & -- \cr
 }
 \end{slide}
 
+\fi
+
 \begin{slide}{Disk performance}
 \itms{
   \item Placement \& ordering of requests a huge issue
@@ -510,6 +542,9 @@ $\overline{\mbox{ERR}}$& -- & -- & -- \cr
 }
 \end{slide}
 
+\iffalse
+
+\section{Disk Scheduling}
 
 \begin{slide}{Scheduling: FCFS}
 \itms{
@@ -634,6 +669,10 @@ Otherwise:
           various disk scheduling algorithms
 }
 \end{slide}
+
+\fi
+
+\section{Flash Storage}
 
 \begin{slide}{Flash memory}
 \itms{
