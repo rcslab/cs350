@@ -299,6 +299,8 @@ $\overline{\mbox{ERR}}$& -- & -- & -- \cr
 
 \begin{slide}{Disk positioning system}
 \itms{
+\item Position specified by <Cyl., Head, Sector>
+\item Each track is specified by the <Cyl.,Head> tuple
 \item Move head to specific track and keep it there
         \ittms{
         \item Resist physical shocks, imperfect tracks, etc.
@@ -311,9 +313,9 @@ $\overline{\mbox{ERR}}$& -- & -- & -- \cr
     \item\textit{settle}--adjusts head to actual desired track
 }
 \item Very short seeks dominated by settle time ($\sim$1 ms)
-\item Short (200-400 cyl.)\ seeks dominated by speedup
+\item Short (200--400 cyl.)\ seeks dominated by speedup
         \ittms{
-        \item Accelerations of ~40g
+	\item Accelerations of $\sim$40g
         }
 }
 \end{slide}
@@ -347,7 +349,8 @@ $\overline{\mbox{ERR}}$& -- & -- & -- \cr
 \end{slide}
 
 \begin{slide}{Transfer Time}
-$Transfer~Time = Seek~Time + Rotational~Delay + MIN(Bus~Speed, Max~Read~Speed)$
+    $Transfer~Time = Seek~Time + Rotational~Delay + \frac{Data 
+    Size}{MIN(Bus~Speed, Max~Read~Speed)}$
 
 \itms{
 \gap
@@ -370,10 +373,10 @@ $Rotational~Delay = \frac{1}{2} \times \frac{60 sec/min}{RPM}$
 
 \end{slide}
 
-\begin{frame}<1-2>
-\frametitle{Sectors}
+\begin{frame}
+\frametitle{Sectors -- LBA Addressing}
 \itms{
-\item Disk interface presents linear array of \emph{sectors}
+\item Modern disk interfaces present linear array of \emph{sectors}
 	\ittms{
 	\item Generally 512 bytes, written atomically (even if power
           failure)
@@ -381,8 +384,9 @@ $Rotational~Delay = \frac{1}{2} \times \frac{60 sec/min}{RPM}$
 \item Disk maps logical sector \#s to physical sectors
 	\ittms{
 	  \item \textit{Zoning}--puts more sectors on longer tracks
-	  \item \textit{Track skewing}--sector 0 pos.\ varies by track
-	  \alt<1>{(why?)}{\rlap{(sequential access speed)}}
+	  \item \textit{Track skewing}--sector 0 pos.\ varies by track for 
+	      sequential accesses
+	  %\alt<1>{(why?)}{\rlap{(sequential access speed)}}
 	  \item \textit{Sparing}--flawed sectors remapped elsewhere
 	 }
 \item OS doesn't know logical to physical sector mapping
@@ -395,25 +399,25 @@ $Rotational~Delay = \frac{1}{2} \times \frac{60 sec/min}{RPM}$
 }
 \end{frame}
 
-\begin{slide}{Disk interface}
+\begin{slide}{Disk controller interface}
 \itms{
-\item Controls hardware, mediates access
-\item Computer, disk often connected by bus (e.g., SCSI)
-	\ittms{
-	\item Multiple devices may contentd for bus
+\item Disks connected by bus (e.g., IDE/ATA, SATA, SCSI, SAS)
+\ittms{
+    \item Multiple devices may contend for bus
 }
-\item \Red{Possible disk/interface features:}
-\item Disconnect from bus during requests %(+200 $\mu$s SCSI)
-\item Command queuing:  Give disk multiple requests
+\item \Red{Advanced interfaces support:}
+%\item Disconnect from bus during requests %(+200 $\mu$s SCSI)
+\item {\em Command queuing}: Give disk multiple requests
 	\ittms{
 	\item Disk can schedule them using rotational information
+	\item OS can limit IO reordering
 	}
-\item Disk cache used for read-ahead
+\item Disk cache used for {\em read-ahead}
 	\ittms{
 	\item Otherwise, sequential reads would incur whole revolution
 	\item Cross track boundaries?  Can't stop a head-switch
 	}
-\item Some disks support write caching
+\item {\em Write caching}
 	\ittms{
 	\item But data not stable---not suitable for all requests
 	}
