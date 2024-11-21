@@ -627,6 +627,8 @@ Persistence      & Non-volatile & Non-volatile & Volatile \\
 %% \end{minipage}
 %% \end{slide}
 
+\iffalse
+
 \begin{slide}{Directories}
 \itms{
   \item Problem: 
@@ -674,7 +676,7 @@ Persistence      & Non-volatile & Non-volatile & Volatile \\
 \frametitle{Hierarchical Unix}
 \itms{
   \item Used since CTSS (1960s)
-\vadjust{\moveright 2.8in\vbox to.0pt{\vss
+\vadjust{\moveright 3in\vbox to.0pt{\vss
     \hbox{\includegraphics[width=2in]{figs/tree}}\kern-.5in\hbox{}}}
   \ittms{
     \item Unix picked up and used really nicely
@@ -740,71 +742,115 @@ Persistence      & Non-volatile & Non-volatile & Volatile \\
 }
 \end{slide}
 
-\begin{slide}{Unix example: \texttt{/a/b/c.c}}
+\fi
+
+\begin{frame}
+\frametitle{Hierarchical Unix}
+\itms{
+\item Directories stored on disk just like regular files \\[-1ex]
+\begin{columns}[T]
+\column{.6\textwidth}
+  \ittms{
+    \item Special inode type byte set to directory
+    \item User's can read just like any other file
+    \item Only special syscalls can write (why?)
+    \item Inodes at fixed disk location
+  }
+\item Root directory always inode \#2 (0 and 1 historically
+      reserved)
+\item Special names:
+  \ittms{
+    \item Root directory: ``\texttt{/}''	
+    \item Current directory: ``\texttt{.}''
+    \item Parent directory: ``\texttt{..}''
+  }
+\column{.3\textwidth}
+\vspace*{1em}
+{\color[rgb]{.5,0,1}\tt
+\begin{tabular}{|r@{,}l|}
+\hline
+<\normalfont\itshape name&{\normalfont\itshape inode}\#>\cr
+<.&2>\cr
+<..&2>\cr
+<afs&1021>\cr
+<tmp&1020>\cr
+<bin&1022>\cr
+<cdrom&4123>\cr
+<dev&1001>\cr
+<sbin&1011>\cr
+\omit\vrule&\omit$\vdots$\vrule width 0pt depth 3pt \hfil\vrule\cr
+\hline
+\end{tabular}
+}
+\end{columns}
+}
+\end{frame}
+
+\begin{slide}{Directory example: \texttt{/a/b/c.c}}
 \centerline{\includegraphics[width=4.9in]{figs/unix-example}}
 \end{slide}
 
-\begin{slide}{Default context: working directory}
-\itms{
-  \item Cumbersome to constantly specify full path names
-  \ittms{
-    \item In Unix, each process associated with a ``current working
-      directory'' (cwd)
-    \item File names not beginning with ``/'' are assumed to be
-      relative to cwd; otherwise translation happens as before
-    \item Editorial: root, cwd should be regular fds (like stdin,
-      stdout,~\ldots) with \emph{openat} syscall instead of
-      \emph{open}
-  }
-  \item Shells track a default list of active contexts 
-  \ittms{
-    \item A ``search path'' for programs you run
-    \item Given a search path $A:B:C$, a shell will check in A, then check in B, then check in C
-    \item Can escape using explicit paths: ``./foo''
-  }
-  \item Example of locality
-}
-\end{slide}
-
-\begin{frame}
-\frametitle{Hard and soft links (synonyms)}
-\itms{
-  \item More than one dir entry can refer to a given file
-\vspace*{-1ex}
-    \begin{columns}[T]
-        \column{60mm}
-      \ittms{
-        \item Unix stores count of pointers (``hard links'') to inode
-        \item To make: ``\texttt{ln foo bar}'' creates a synonym
-          (\texttt{bar}) for \emph{file} \texttt{foo}
-      }
-        \column{30mm}
-\begin{tikzpicture}[font=\normalfont,remember picture]
-\path node[draw,align=left] (inode) {inode \#31279\\ refcount = 2}
-  node[red,font=\ttfamily] at (120:1.5) {foo}
-    edge[red,thick,->,shorten >=1pt] (inode)
-  node[red,font=\ttfamily] at (60:1.5) (bar) {bar}
-    edge[red,thick,->,shorten >=1pt] (inode) ;
-\end{tikzpicture}
-    \end{columns}
-  \item Soft/symbolic links = synonyms for \emph{names}
-  \ittms{
-    \item Point to a file (or dir) \emph{name}, but object can be
-      deleted from underneath it (or never even exist).
-    \item Unix implements like directories: inode has special \\
-      ``symlink'' bit set and contains name of link target \\
-      \leavevmode\raise 2.5ex\hbox{\quad\texttt{ln -s /bar baz} }
-\begin{tikzpicture}[remember picture,font=\normalfont\normalsize]
-\path node[draw,align=left] (symlink) {\texttt{"/bar"}\\ refcount = 1}
-  edge[->,dotted,red,thick,overlay,out=0,in=-10,looseness=1.1] (bar)
-  node[red,font=\ttfamily\normalsize] at (-170:2.2) {baz}
-    edge[red,thick,->,shorten >=1pt] (symlink);
-\end{tikzpicture}
-    \item When the file system encounters a symbolic link it
-      automatically translates it (if possible).
-  }
-}
-\end{frame}
+% \begin{slide}{Default context: working directory}
+% \itms{
+%   \item Cumbersome to constantly specify full path names
+%   \ittms{
+%     \item In Unix, each process associated with a ``current working
+%       directory'' (cwd)
+%     \item File names not beginning with ``/'' are assumed to be
+%       relative to cwd; otherwise translation happens as before
+%     \item Editorial: root, cwd should be regular fds (like stdin,
+%       stdout,~\ldots) with \emph{openat} syscall instead of
+%       \emph{open}
+%   }
+%   \item Shells track a default list of active contexts 
+%   \ittms{
+%     \item A ``search path'' for programs you run
+%     \item Given a search path $A:B:C$, a shell will check in A, then check in B, then check in C
+%     \item Can escape using explicit paths: ``./foo''
+%   }
+%   \item Example of locality
+% }
+% \end{slide}
+% 
+% \begin{frame}
+% \frametitle{Hard and soft links (synonyms)}
+% \itms{
+%   \item More than one dir entry can refer to a given file
+% \vspace*{-1ex}
+%     \begin{columns}[T]
+%         \column{60mm}
+%       \ittms{
+%         \item Unix stores count of pointers (``hard links'') to inode
+%         \item To make: ``\texttt{ln foo bar}'' creates a synonym
+%           (\texttt{bar}) for \emph{file} \texttt{foo}
+%       }
+%         \column{30mm}
+% \begin{tikzpicture}[font=\normalfont,remember picture]
+% \path node[draw,align=left] (inode) {inode \#31279\\ refcount = 2}
+%   node[red,font=\ttfamily] at (120:1.5) {foo}
+%     edge[red,thick,->,shorten >=1pt] (inode)
+%   node[red,font=\ttfamily] at (60:1.5) (bar) {bar}
+%     edge[red,thick,->,shorten >=1pt] (inode) ;
+% \end{tikzpicture}
+%     \end{columns}
+%   \item Soft/symbolic links = synonyms for \emph{names}
+%   \ittms{
+%     \item Point to a file (or dir) \emph{name}, but object can be
+%       deleted from underneath it (or never even exist).
+%     \item Unix implements like directories: inode has special \\
+%       ``symlink'' bit set and contains name of link target \\
+%       \leavevmode\raise 2.5ex\hbox{\quad\texttt{ln -s /bar baz} }
+% \begin{tikzpicture}[remember picture,font=\normalfont\normalsize]
+% \path node[draw,align=left] (symlink) {\texttt{"/bar"}\\ refcount = 1}
+%   edge[->,dotted,red,thick,overlay,out=0,in=-10,looseness=1.1] (bar)
+%   node[red,font=\ttfamily\normalsize] at (-170:2.2) {baz}
+%     edge[red,thick,->,shorten >=1pt] (symlink);
+% \end{tikzpicture}
+%     \item When the file system encounters a symbolic link it
+%       automatically translates it (if possible).
+%   }
+% }
+% \end{frame}
 
 \begin{slide}{Case study: speeding up FS}
 \itms{
@@ -951,7 +997,7 @@ Block size & space wasted & file bandwidth \\
       \includegraphics[width=4in]{figs/linkedlist}
     \item Bad: free list gets jumbled over time.  Finding adjacent blocks hard and slow 
   }
-  \item FFS: switch to bit-map of free blocks
+  \item FFS: switch to bitmap of free blocks
   \ittms{
     \item 1010101111111000001111111000101100
     \item Easier to find contiguous blocks.  
@@ -971,7 +1017,7 @@ Block size & space wasted & file bandwidth \\
   }
   \item Allocate block close to block $x$?
   \ittms{
-    \item Check for blocks near \texttt{bmap[$x$/32]}
+    \item Check for blocks near \texttt{bmap[$x$]}
     \item If disk almost empty, will likely find one near
     \item As disk becomes full, search becomes more expensive and less
       effective
@@ -991,8 +1037,8 @@ Block size & space wasted & file bandwidth \\
 \itms{
   \item Performance improvements:
   \ittms{
-    \item Able to get 20-40\% of disk bandwidth for large files
-    \item 10-20x original Unix file system!
+    \item Able to get 20--40\% of disk bandwidth for large files
+    \item 10--20$\times$ original Unix file system!
     \item Better small file performance  (why?)
   }
   \item Is this the best we can do?  No.
@@ -1012,30 +1058,30 @@ Block size & space wasted & file bandwidth \\
 }
 \end{slide}
 
-\begin{slide}{Other hacks}
-\itms{
-  \item Obvious:
-  \ittms{
-    \item Big file cache
-  }
-  \item Fact: no rotation delay if get whole track.
-  \ittms{
-    \item How to use?
-  }
-  \item Fact: transfer cost negligible.
-  \ittms{
-    \item Recall:  Can get 50x the data for only $\sim$3\% more overhead
-    \item 1 sector: 5ms + 4ms + 5$\mu$s
-      $\left(\mathrm{\approx 512\>B/(100\>MB/s)}\right)$ $\approx$ 9ms
-    \item 50 sectors: 5ms + 4ms + .25ms = 9.25ms
-    \item How to use?
-  }
-  \item Fact: if transfer huge, seek + rotation negligible
-  \ittms{
-    \item \cref{readings/lfs.pdf}{LFS}:
-      Hoard data, write out MB at a time
-  }
-}
-\end{slide}
+% \begin{slide}{Other hacks}
+% \itms{
+%   \item Obvious:
+%   \ittms{
+%     \item Big file cache
+%   }
+%   \item Fact: no rotation delay if get whole track.
+%   \ittms{
+%     \item How to use?
+%   }
+%   \item Fact: transfer cost negligible.
+%   \ittms{
+%     \item Recall:  Can get 50x the data for only $\sim$3\% more overhead
+%     \item 1 sector: 5ms + 4ms + 5$\mu$s
+%       $\left(\mathrm{\approx 512\>B/(100\>MB/s)}\right)$ $\approx$ 9ms
+%     \item 50 sectors: 5ms + 4ms + .25ms = 9.25ms
+%     \item How to use?
+%   }
+%   \item Fact: if transfer huge, seek + rotation negligible
+%   \ittms{
+%     \item \cref{readings/lfs.pdf}{LFS}:
+%       Hoard data, write out MB at a time
+%   }
+% }
+% \end{slide}
 
 \end{document}

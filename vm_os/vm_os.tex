@@ -116,8 +116,9 @@
 \itms{
   \item Hardware provides kernel with information about page fault
   \ittms{
-    \item Faulting virtual address (In \texttt{\%c0\_vaddr} reg on MIPS)
-    \item Address of instruction that caused fault (\texttt{\%c0\_epc} reg)
+    \item Faulting virtual address (\texttt{\%cr2} reg in x86)
+    \item Address of instruction that caused fault (\texttt{\%rip} in trap 
+	frame)
     \item Was the access a read or write?  Was it an instruction
   fetch? \\
       Was it caused by user access to kernel-only memory?
