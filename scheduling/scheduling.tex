@@ -43,10 +43,7 @@
 
 \begin{slide}{Scheduling criteria}
 \itms{
-  \item Why do we care?
-  \ittms{
-    \item What goals should we have for a scheduling algorithm?
-  }
+  \item What goals should we have for a scheduling algorithm?
 \pause
 \item \emph{Throughput} -- \# of procs that complete per unit time
 \ittms{
@@ -243,20 +240,20 @@ length less than remaining time of current executing process, preempt
   }
   \item Can lead to unfairness or starvation
   \item In practice, can't actually predict the future
-  \item But can estimate CPU burst length based on past
-  \ittms{
-    \item Exponentially weighted average a good idea
-    \item $t_n$ actual length of proc's $n^\mathrm{th}$ CPU burst
-    \item $\tau_{n+1}$ estimated length of proc's $n+1^\mathrm{st}$
-    \item Choose parameter $\alpha$ where $0<\alpha\le1$
-    \item Let $\tau_{n+1}=\alpha t_n+(1-\alpha)\tau_n$
-  }
+%  \item But can estimate CPU burst length based on past
+%  \ittms{
+%    \item Exponentially weighted average a good idea
+%    \item $t_n$ actual length of proc's $n^\mathrm{th}$ CPU burst
+%    \item $\tau_{n+1}$ estimated length of proc's $n+1^\mathrm{st}$
+%    \item Choose parameter $\alpha$ where $0<\alpha\le1$
+%    \item Let $\tau_{n+1}=\alpha t_n+(1-\alpha)\tau_n$
+%  }
 }
 \end{slide}
 
-\begin{slide}{Exp. weighted average example}
-\centerline{\includegraphics[width=4in]{figs/predict}}
-\end{slide}
+%\begin{slide}{Exp. weighted average example}
+%\centerline{\includegraphics[width=4in]{figs/predict}}
+%\end{slide}
 
 \begin{slide}{Round robin (RR) scheduling}
 \centerline{\includegraphics[width=3.3in]{figs/rr}}
@@ -367,8 +364,9 @@ length less than remaining time of current executing process, preempt
 }}
 \end{slide}
 
+\section{Multilevel feedback queues (BSD 4.4)}
 
-\begin{slide}{Multilevel feeedback queues (BSD)}
+\begin{slide}{Multilevel feedback queues (BSD)}
 \centerline{\includegraphics[height=1.5in]{figs/bsd}}
 \itms{
   \item Every runnable process on one of 32 run queues
@@ -564,6 +562,7 @@ length less than remaining time of current executing process, preempt
 % }
 % \end{slide}
 
+\iffalse
 \begin{slide}{Thread dependencies}
 \itms{
   \item Say $H$ at high priority, $L$ at low priority
@@ -608,7 +607,9 @@ length less than remaining time of current executing process, preempt
   }
 }
 \end{slide}
+\fi
 
+\section{Borrowed Virtual Time Scheduler}
 
 \begin{slide}{Borrowed Virtual Time Scheduler \cref{readings/bvt.pdf}{[Duda]}}
 \itms{
@@ -787,15 +788,5 @@ length less than remaining time of current executing process, preempt
 % }
 % }
 % \end{slide}
-
-\begin{slide}{Lottery Scheduler \cref{readings/lottery.pdf}{[Waldspurger]}}
-\itms{
-\item Reading assignment a great paper and simple algorithm
-\gap
-\item Randomly select a process to run!
-\gap
-\item Process priorities are determined by a number of tickets (or shares)
-}
-\end{slide}
 
 \end{document}
