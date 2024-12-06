@@ -10,3 +10,10 @@
 *.vrb
 *.out
 *.swp
+inclass/*.o
+inclass/*.pdf
+inclass/fibers
+inclass/handover
+inclass/master
+inclass/processes
+inclass/threads
